@@ -1,0 +1,226 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Lingua "Precision" Design System
+  
+  Reading: premium communication tool for language learners, with a calm,
+  architectural language leaning toward refined consumer-app aesthetics.
+  
+  Dials: VARIANCE=7, MOTION=5, DENSITY=3
+  
+  Palette: sophisticated warm stone base, deep ink, rich emerald brand,
+  warm amber accent for AI moments. NOT cream/beach/brass.
+*/
+
+:root {
+  /* --- Surface palette (warm stone, NOT cream) --- */
+  --bg: oklch(0.988 0.003 80);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.972 0.005 82);
+  --surface-3: oklch(0.955 0.007 82);
+  --line: oklch(0.915 0.008 82);
+  --line-strong: oklch(0.87 0.01 82);
+
+  /* --- Ink scale --- */
+  --ink: oklch(0.16 0.02 260);
+  --ink-2: oklch(0.28 0.015 260);
+  --muted: oklch(0.52 0.015 260);
+  --faint: oklch(0.68 0.01 260);
+
+  /* --- Brand: rich emerald --- */
+  --brand: oklch(0.58 0.14 162);
+  --brand-hover: oklch(0.52 0.14 162);
+  --brand-ink: oklch(0.36 0.09 162);
+  --brand-soft: oklch(0.965 0.02 162);
+  --brand-glow: oklch(0.58 0.14 162 / 0.12);
+
+  /* --- Accent: warm amber (AI / translate moments) --- */
+  --accent: oklch(0.72 0.14 55);
+  --accent-hover: oklch(0.66 0.14 55);
+  --accent-soft: oklch(0.96 0.025 55);
+
+  /* --- Outgoing messages --- */
+  --outgoing: oklch(0.56 0.13 162);
+  --outgoing-ink: oklch(0.99 0.008 162);
+
+  /* --- Shadows --- */
+  --shadow-xs: 0 1px 2px oklch(0.2 0.02 260 / 0.04);
+  --shadow-sm: 0 1px 3px oklch(0.2 0.02 260 / 0.06), 0 1px 2px oklch(0.2 0.02 260 / 0.04);
+  --shadow-md: 0 4px 6px -1px oklch(0.2 0.02 260 / 0.07), 0 2px 4px -2px oklch(0.2 0.02 260 / 0.05);
+  --shadow-lg: 0 10px 15px -3px oklch(0.2 0.02 260 / 0.08), 0 4px 6px -4px oklch(0.2 0.02 260 / 0.04);
+  --shadow-xl: 0 20px 25px -5px oklch(0.2 0.02 260 / 0.08), 0 8px 10px -6px oklch(0.2 0.02 260 / 0.04);
+  --shadow-card: 0 1px 3px oklch(0.2 0.02 260 / 0.05), 0 8px 24px -8px oklch(0.2 0.02 260 / 0.08);
+  --shadow-float: 0 12px 40px -12px oklch(0.2 0.02 260 / 0.12), 0 4px 12px -4px oklch(0.2 0.02 260 / 0.06);
+  --shadow-preview: 0 -1px 4px oklch(0.2 0.02 260 / 0.04), 0 16px 48px -16px oklch(0.2 0.02 260 / 0.14);
+
+  /* --- Z-index scale --- */
+  --z-base: 0;
+  --z-dropdown: 20;
+  --z-sticky: 30;
+  --z-backdrop: 40;
+  --z-modal: 50;
+  --z-keyboard: 55;
+  --z-toast: 60;
+  --z-tooltip: 70;
+
+  /* --- Radii --- */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  color-scheme: light;
+}
+
+/* === Reset & Base === */
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Plus Jakarta Sans", "Noto Sans Bengali", "Noto Sans JP", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+/* === Focus ring === */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* === Scrollbars === */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--line-strong);
+}
+
+/* === Chat canvas texture === */
+.chat-canvas {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 1px 1px, oklch(0.58 0.14 162 / 0.03) 1px, transparent 0);
+  background-size: 28px 28px;
+}
+
+/* === Components === */
+@layer components {
+  .btn-ghost {
+    @apply inline-flex items-center justify-center rounded-full transition-all duration-200;
+    color: var(--muted);
+    background: transparent;
+  }
+  .btn-ghost:hover {
+    color: var(--ink);
+    background: var(--surface-2);
+  }
+  .btn-ghost:active {
+    transform: scale(0.96);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full font-semibold transition-all duration-200;
+    background: var(--brand);
+    color: white;
+    box-shadow: 0 1px 3px oklch(0.58 0.14 162 / 0.3), 0 1px 2px oklch(0.58 0.14 162 / 0.2);
+  }
+  .btn-primary:hover {
+    background: var(--brand-hover);
+    box-shadow: 0 2px 6px oklch(0.58 0.14 162 / 0.35), 0 2px 4px oklch(0.58 0.14 162 / 0.25);
+  }
+  .btn-primary:active {
+    transform: scale(0.97);
+  }
+  .btn-primary:disabled {
+    background: var(--line-strong);
+    color: var(--faint);
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  .input-field {
+    @apply w-full rounded-xl bg-transparent text-[15px] leading-relaxed focus:outline-none;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 0.65rem 0.9rem;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  }
+  .input-field::placeholder {
+    color: var(--faint);
+  }
+  .input-field:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px var(--brand-glow);
+    background: var(--surface);
+  }
+}
+
+/* === Utilities === */
+@layer utilities {
+  .balance { text-wrap: balance; }
+  .pretty { text-wrap: pretty; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+
+/* === Animations === */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+  40% { transform: translateY(-3px); opacity: 1; }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+@keyframes float-up {
+  0% { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+/* === Reduced motion === */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
