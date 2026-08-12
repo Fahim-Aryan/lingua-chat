@@ -1,16 +1,11 @@
-/**
- * translation.js — the AI service seam.
- *
- * When VITE_API_URL is set, these functions call the Node/Express backend,
- * which calls the Gemini API and returns the PRD JSON schema:
- *   { translation, has_correction, corrected_text, tips[], source_language, target_language }
- *
- * Without it they run a local mock (phrase dictionary + heuristics) so the
- * interface stays fully interactive before keys are configured.
- */
+const API_URL = import.meta.env.VITE_API_URL || "";
+const USE_MOCK = !API_URL;
 
-// ---- Mock knowledge base -------------------------------------------------
+function delay(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
 
+// ---- Mock knowledge base (same as before for demo mode) ----
 const PHRASES = [
   { ja: "こんにちは", bn: "নমস্কার / হ্যালো", en: "Hello" },
   { ja: "おはよう", bn: "সুপ্রভাত", en: "Good morning" },
@@ -52,9 +47,7 @@ function bestMatch(text, list, key) {
 
 function mockTranslate({ text, sourceLang, targetLang }) {
   const clean = text.trim();
-  if (!clean) {
-    return { translation: "", has_correction: false, corrected_text: "", tips: [] };
-  }
+  if (!clean) return { translation: "", has_correction: false, corrected_text: "", tips: [] };
 
   let translation = "";
   const tips = [];
@@ -63,59 +56,33 @@ function mockTranslate({ text, sourceLang, targetLang }) {
 
   if (sourceLang === "ja") {
     const m = bestMatch(clean, PHRASES, "ja");
-    translation = m ? (targetLang === "en" ? m.en : m.bn) : "…";
-
-    // Politeness heuristic — the kind of tip Gemini would surface.
+    translation = m ? (targetLang === "en" ? m.en : m.bn) : "...";
     if (/ありがとう$/.test(clean)) {
       hasCorrection = true;
       corrected = clean + "ございます";
-      tips.push("Add ございます to sound more polite in most conversations.");
-    }
-    if (/^げんき/.test(clean) && !/か$/.test(clean) && /ですか/.test(clean) === false) {
-      tips.push("End a question with か to mark it clearly.");
-    }
-    if (!m) {
-      tips.push("Keep typing — I'll translate once the phrase is complete.");
+      tips.push("Add ございます to sound more polite.");
     }
   } else if (sourceLang === "bn") {
     const m = bestMatch(clean, BN_TO_JA, "bn");
-    translation = m ? m.ja : "…";
+    translation = m ? m.ja : "...";
     if (m) {
       const p = PHRASES.find((x) => x.ja === m.ja);
-      if (p) tips.push(`Reads as “${p.en}” in Japanese.`);
-    } else {
-      tips.push("Try a short, common phrase for the best suggestion.");
+      if (p) tips.push(`Reads as "${p.en}" in Japanese.`);
     }
   } else {
     translation = clean;
   }
 
-  return {
-    translation,
-    has_correction: hasCorrection,
-    corrected_text: corrected,
-    tips,
-    source_language: sourceLang,
-    target_language: targetLang,
-  };
+  return { translation, has_correction: hasCorrection, corrected_text: corrected, tips, source_language: sourceLang, target_language: targetLang };
 }
 
-// ---- Public API (UI depends only on these) -------------------------------
-
-const API_URL = import.meta.env.VITE_API_URL;
-const USE_MOCK = !API_URL;
-
-function delay(ms) {
-  return new Promise((r) => setTimeout(r, ms));
-}
+// ---- Public API ----
 
 /**
- * Live typing feedback. POST /api/translate/live on the Node/Express backend,
- * which calls Gemini and returns the PRD JSON schema.
+ * Live typing feedback. In production: POST /api/translate/live (Vercel serverless).
  */
 export async function livePreview({ text, sourceLang, targetLang, signal }) {
   if (USE_MOCK) {
-    // simulate network + model latency, respect aborts
     await delay(280 + Math.random() * 260);
     if (signal?.aborted) throw new DOMException("aborted", "AbortError");
     return mockTranslate({ text, sourceLang, targetLang });
@@ -131,7 +98,7 @@ export async function livePreview({ text, sourceLang, targetLang, signal }) {
 }
 
 /**
- * Translate a stored message on demand. POST /api/translate/message.
+ * Translate a stored message on demand.
  */
 export async function translateMessage({ text, sourceLang, targetLang }) {
   if (USE_MOCK) {
