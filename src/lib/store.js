@@ -72,7 +72,7 @@ function shapeContact(row) {
 }
 
 /**
- * Boot real mode: load session + own profile + all other profiles.
+ * Boot real mode: load session + own profile + only friends.
  * Returns { me, contacts } or null when signed out / not configured.
  */
 export async function boot() {
@@ -88,15 +88,73 @@ export async function boot() {
     .maybeSingle();
   if (error || !me) return { signedIn: false };
 
-  const { data: others } = await supabase
+  ME = { ...me, user_id: me.user_id, profile_picture: me.profile_picture || "" };
+
+  // Only fetch friends
+  const { data: friendRows } = await supabase
+    .from("friends")
+    .select("friend_id")
+    .eq("user_id", session.user.id);
+
+  if (!friendRows || friendRows.length === 0) {
+    contacts = [];
+    return { me: ME, contacts, signedIn: true };
+  }
+
+  const friendIds = friendRows.map((r) => r.friend_id);
+
+  const { data: friendProfiles } = await supabase
     .from("profiles")
     .select("*")
-    .neq("user_id", session.user.id)
-    .order("username");
+    .in("user_id", friendIds);
 
-  ME = { ...me, user_id: me.user_id, profile_picture: me.profile_picture || "" };
-  contacts = (others || []).map(shapeContact);
+  contacts = (friendProfiles || []).map(shapeContact);
   return { me: ME, contacts, signedIn: true };
+}
+
+/** Search profiles by username (for adding friends) */
+export async function searchUsers(query) {
+  if (isDemo || !query.trim()) return [];
+  const { data } = await supabase
+    .from("profiles")
+    .select("user_id, username, preferred_language")
+    .ilike("username", `%${query.trim()}%`)
+    .neq("user_id", ME.user_id)
+    .limit(10);
+  return data || [];
+}
+
+/** Add a friend (bidirectional) */
+export async function addFriend(friendId) {
+  if (isDemo) return true;
+  const { error } = await supabase
+    .from("friends")
+    .insert({ user_id: ME.user_id, friend_id: friendId });
+  if (error) {
+    console.error("[addFriend]", error);
+    return false;
+  }
+  // Also add reverse so friend sees us
+  await supabase
+    .from("friends")
+    .insert({ user_id: friendId, friend_id: ME.user_id })
+    .catch(() => {});
+  return true;
+}
+
+/** Remove a friend (bidirectional) */
+export async function removeFriend(friendId) {
+  if (isDemo) return;
+  await supabase
+    .from("friends")
+    .delete()
+    .eq("user_id", ME.user_id)
+    .eq("friend_id", friendId);
+  await supabase
+    .from("friends")
+    .delete()
+    .eq("user_id", friendId)
+    .eq("friend_id", ME.user_id);
 }
 
 export function getContacts() {

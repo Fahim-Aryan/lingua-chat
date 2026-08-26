@@ -5,6 +5,7 @@ import EmptyState from "./components/EmptyState";
 import MediaSheet from "./components/MediaSheet";
 import Login from "./components/Login";
 import Settings from "./components/Settings";
+import AddFriend from "./components/AddFriend";
 import { boot, getContacts, createMessage, signOut, isDemo } from "./lib/store";
 import { supabase, isConfigured } from "./lib/supabase";
 import { cx } from "./lib/utils";
@@ -37,6 +38,7 @@ export default function App() {
   const [mediaOpen, setMediaOpen] = useState(false);
   const [tick, setTick] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [settings, setSettings] = useState(loadSettings);
 
   // Apply theme
@@ -117,6 +119,7 @@ export default function App() {
           }}
           tick={tick}
           onSettings={() => setSettingsOpen(true)}
+          onAddFriend={() => setAddFriendOpen(true)}
         />
       </div>
 
@@ -145,6 +148,16 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
         settings={settings}
         onSave={handleSaveSettings}
+      />
+
+      <AddFriend
+        open={addFriendOpen}
+        onClose={() => setAddFriendOpen(false)}
+        onAdded={() => {
+          boot().then((res) => {
+            if (res.signedIn) setContacts(res.contacts);
+          });
+        }}
       />
     </div>
   );

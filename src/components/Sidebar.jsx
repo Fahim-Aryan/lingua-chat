@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Avatar from "./Avatar";
-import { Search, Sparkle, Plus, Settings } from "./icons";
+import { Search, Sparkle, Plus, Settings, UserPlus } from "./icons";
 import { lastMessage, getMe } from "../lib/store";
 import { relativeShort, cx, isJapanese } from "../lib/utils";
 
@@ -17,7 +17,7 @@ function Preview({ msg }) {
   );
 }
 
-export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings }) {
+export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings, onAddFriend }) {
   const [query, setQuery] = useState("");
   const [previews, setPreviews] = useState({});
 
@@ -58,12 +58,22 @@ export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings
             <div className="mt-1 text-[11.5px] font-medium text-brand">translate as you type</div>
           </div>
         </div>
-        <button
-          className="btn-ghost h-10 w-10"
-          aria-label="New conversation"
-        >
-          <Plus size={20} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onAddFriend}
+            className="btn-ghost h-10 w-10"
+            aria-label="Add friend"
+            title="Add friend"
+          >
+            <UserPlus size={20} />
+          </button>
+          <button
+            className="btn-ghost h-10 w-10"
+            aria-label="New conversation"
+          >
+            <Plus size={20} />
+          </button>
+        </div>
       </header>
 
       {/* Search */}
@@ -142,7 +152,7 @@ export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-[13.5px] font-semibold text-ink">{me.username}</div>
           <div className="mt-0.5 text-[11px] text-muted">
-            <span className="font-bn">বাংলা</span> · Learning Japanese
+            {contacts.length === 0 ? "No friends yet" : `${contacts.length} friend${contacts.length > 1 ? "s" : ""}`}
           </div>
         </div>
         <button

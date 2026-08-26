@@ -1,6 +1,5 @@
--- ============================================================
 -- Lingua — Supabase schema (run in Supabase SQL Editor)
--- Users (profiles) + messages, RLS, storage bucket
+-- Users (profiles) + messages + friends, RLS, storage bucket
 -- ============================================================
 
 -- 1) Profile table (links to auth.users)
@@ -10,6 +9,16 @@ create table if not exists public.profiles (
   profile_picture text,
   preferred_language text not null default 'bn',
   created_at timestamptz not null default now()
+);
+
+-- 2) Friends table (bidirectional)
+create table if not exists public.friends (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (user_id) on delete cascade,
+  friend_id uuid not null references public.profiles (user_id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique(user_id, friend_id),
+  check (user_id <> friend_id)
 );
 
 -- 2) Message table (PRD §5.1)
@@ -54,6 +63,7 @@ create trigger on_auth_user_created
 -- 4) Row Level Security
 alter table public.profiles enable row level security;
 alter table public.messages enable row level security;
+alter table public.friends enable row level security;
 
 -- Profiles: anyone signed in can read; only owner can update
 create policy "profiles_read" on public.profiles
@@ -68,6 +78,16 @@ create policy "messages_read_participants" on public.messages
 
 create policy "messages_insert_sender" on public.messages
   for insert with check (auth.uid() = sender_id);
+
+-- Friends: both users can read their own friendships; insert/delete own
+create policy "friends_read_own" on public.friends
+  for select using (auth.uid() = user_id or auth.uid() = friend_id);
+
+create policy "friends_insert_own" on public.friends
+  for insert with check (auth.uid() = user_id);
+
+create policy "friends_delete_own" on public.friends
+  for delete using (auth.uid() = user_id or auth.uid() = friend_id);
 
 -- 5) Realtime: broadcast inserts on messages
 alter publication supabase_realtime add table public.messages;
