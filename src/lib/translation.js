@@ -1,5 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || "";
-const USE_MOCK = !API_URL;
+const USE_MOCK = false;
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
