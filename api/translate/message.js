@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const NVIDIA_BASE_URL = process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1";
-const NVIDIA_MODEL = process.env.NVIDIA_MODEL || "deepseek-ai/deepseek-v4-flash-0731";
-const NVIDIA_FALLBACK_MODEL = process.env.NVIDIA_FALLBACK_MODEL || "meta/llama-3.1-8b-instruct";
+const NVIDIA_MODEL = process.env.NVIDIA_MODEL || "openai/gpt-oss-20b";
+const NVIDIA_FALLBACK_MODEL = process.env.NVIDIA_FALLBACK_MODEL || "openai/gpt-oss-20b";
 const REQUEST_TIMEOUT_MS = 25000;
 
 const PROMPT = `You are a translation engine. Translate the user text from sourceLang to targetLang.
@@ -32,7 +32,7 @@ async function askNvidiaModel(model, text, sourceLang, targetLang) {
         },
       ],
       temperature: 0.2,
-      max_tokens: 512,
+      max_tokens: 16384,
     }),
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
@@ -41,7 +41,9 @@ async function askNvidiaModel(model, text, sourceLang, targetLang) {
     throw new Error(`NVIDIA API ${res.status}: ${body.slice(0, 300)}`);
   }
   const json = await res.json();
-  return cleanJson(json.choices?.[0]?.message?.content || "");
+  const msg = json.choices?.[0]?.message;
+  const raw = msg?.content || msg?.reasoning_content || msg?.reasoning || "";
+  return cleanJson(raw);
 }
 
 async function askNvidia(text, sourceLang, targetLang) {
