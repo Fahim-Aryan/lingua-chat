@@ -3,7 +3,7 @@ import { Sparkle, X, Info, Check } from "./icons";
 import { LANGUAGES } from "../lib/languages";
 import { cx } from "../lib/utils";
 
-export default function LivePreview({ state, sourceLang, targetLang, onApplyCorrection, onDismiss }) {
+export default function LivePreview({ state, sourceLang, targetLang, onApplyCorrection, onApplyTranslation, onDismiss }) {
   const open = state.status !== "idle";
   const src = LANGUAGES[sourceLang];
   const tgt = LANGUAGES[targetLang];
@@ -53,17 +53,27 @@ export default function LivePreview({ state, sourceLang, targetLang, onApplyCorr
                     Couldn't reach the translator. Check your connection.
                   </p>
                 ) : (
-                  <p
-                    className={cx(
-                      "text-[15px] leading-snug text-ink",
-                      targetLang === "bn" && "font-bn",
-                      targetLang === "ja" && "font-jp"
+                  <div className="flex items-center gap-2">
+                    <p
+                      className={cx(
+                        "min-w-0 flex-1 text-[15px] leading-snug text-ink",
+                        targetLang === "bn" && "font-bn",
+                        targetLang === "ja" && "font-jp"
+                      )}
+                    >
+                      {state.data?.translation || (
+                        <span className="text-faint">...</span>
+                      )}
+                    </p>
+                    {state.data?.translation && onApplyTranslation && (
+                      <button
+                        onClick={() => onApplyTranslation(state.data.translation)}
+                        className="shrink-0 rounded-full bg-brand px-3 py-1.5 text-[11px] font-semibold text-white transition-all duration-200 hover:bg-brand-hover active:scale-95"
+                      >
+                        Use this
+                      </button>
                     )}
-                  >
-                    {state.data?.translation || (
-                      <span className="text-faint">...</span>
-                    )}
-                  </p>
+                  </div>
                 )}
               </div>
 

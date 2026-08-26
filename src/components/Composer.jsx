@@ -136,6 +136,7 @@ export default function Composer({ inputLang, setInputLang, onSend, onAttach }) 
             sourceLang={inputLang}
             targetLang={targetLang}
             onApplyCorrection={applyCorrection}
+            onApplyTranslation={applyCorrection}
             onDismiss={() => setPreview({ status: "idle", data: null })}
           />
         </div>
