@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Avatar from "./Avatar";
-import { Search, Sparkle, Plus, X } from "./icons";
+import { Search, Sparkle, Plus, Settings } from "./icons";
 import { lastMessage, getMe } from "../lib/store";
 import { relativeShort, cx, isJapanese } from "../lib/utils";
 
@@ -17,7 +17,7 @@ function Preview({ msg }) {
   );
 }
 
-export default function Sidebar({ contacts, activeId, onSelect, tick, onSignOut, canSignOut }) {
+export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings }) {
   const [query, setQuery] = useState("");
   const [previews, setPreviews] = useState({});
 
@@ -145,16 +145,14 @@ export default function Sidebar({ contacts, activeId, onSelect, tick, onSignOut,
             <span className="font-bn">বাংলা</span> · Learning Japanese
           </div>
         </div>
-        {canSignOut && (
-          <button
-            onClick={onSignOut}
-            className="btn-ghost h-8 w-8"
-            aria-label="Sign out"
-            title="Sign out"
-          >
-            <X size={17} />
-          </button>
-        )}
+        <button
+          onClick={onSettings}
+          className="btn-ghost h-9 w-9"
+          aria-label="Settings"
+          title="Settings"
+        >
+          <Settings size={18} />
+        </button>
       </footer>
     </aside>
   );

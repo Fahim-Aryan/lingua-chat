@@ -76,6 +76,62 @@
   color-scheme: light;
 }
 
+/* === Dark mode === */
+html.dark {
+  color-scheme: dark;
+}
+html.dark {
+  --bg: oklch(0.16 0.015 260);
+  --bg-dark: oklch(0.13 0.015 260);
+  --surface: oklch(0.2 0.015 260);
+  --surface-2: oklch(0.23 0.015 260);
+  --surface-3: oklch(0.26 0.015 260);
+  --line: oklch(0.3 0.015 260);
+  --line-strong: oklch(0.35 0.015 260);
+
+  --ink: oklch(0.93 0.01 260);
+  --ink-2: oklch(0.82 0.01 260);
+  --muted: oklch(0.62 0.015 260);
+  --faint: oklch(0.5 0.01 260);
+
+  --brand: oklch(0.65 0.14 162);
+  --brand-hover: oklch(0.7 0.14 162);
+  --brand-ink: oklch(0.15 0.05 162);
+  --brand-soft: oklch(0.25 0.04 162);
+  --brand-glow: oklch(0.65 0.14 162 / 0.2);
+
+  --accent: oklch(0.78 0.14 55);
+  --accent-hover: oklch(0.82 0.14 55);
+  --accent-soft: oklch(0.28 0.04 55);
+
+  --outgoing: oklch(0.35 0.12 162);
+  --outgoing-ink: oklch(0.95 0.008 162);
+
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.2);
+  --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.3), 0 1px 2px oklch(0 0 0 / 0.2);
+  --shadow-md: 0 4px 6px -1px oklch(0 0 0 / 0.3), 0 2px 4px -2px oklch(0 0 0 / 0.2);
+  --shadow-lg: 0 10px 15px -3px oklch(0 0 0 / 0.35), 0 4px 6px -4px oklch(0 0 0 / 0.2);
+  --shadow-xl: 0 20px 25px -5px oklch(0 0 0 / 0.4), 0 8px 10px -6px oklch(0 0 0 / 0.2);
+  --shadow-card: 0 1px 3px oklch(0 0 0 / 0.3), 0 8px 24px -8px oklch(0 0 0 / 0.4);
+  --shadow-float: 0 12px 40px -12px oklch(0 0 0 / 0.5), 0 4px 12px -4px oklch(0 0 0 / 0.3);
+  --shadow-preview: 0 -1px 4px oklch(0 0 0 / 0.2), 0 16px 48px -16px oklch(0 0 0 / 0.5);
+}
+
+html.dark .chat-canvas {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 1px 1px, oklch(0.65 0.14 162 / 0.04) 1px, transparent 0);
+}
+
+html.dark .scrollbar-thin {
+  scrollbar-color: var(--line) transparent;
+}
+
+html.dark ::selection {
+  background: var(--brand);
+  color: white;
+}
+
 /* === Reset & Base === */
 * {
   -webkit-tap-highlight-color: transparent;

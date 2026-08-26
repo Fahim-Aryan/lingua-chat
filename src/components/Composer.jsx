@@ -9,7 +9,7 @@ import { cx } from "../lib/utils";
 
 const DEBOUNCE_MS = 400;
 
-export default function Composer({ inputLang, setInputLang, onSend, onAttach }) {
+export default function Composer({ inputLang, setInputLang, onSend, onAttach, targetLang: targetLangProp }) {
   const [text, setText] = useState("");
   const [preview, setPreview] = useState({ status: "idle", data: null });
   const [kanaOpen, setKanaOpen] = useState(false);
@@ -21,8 +21,8 @@ export default function Composer({ inputLang, setInputLang, onSend, onAttach }) 
   const romajiBuf = useRef("");
 
   const targetLang = useMemo(
-    () => (inputLang === "en" ? "bn" : otherLang(inputLang)),
-    [inputLang]
+    () => targetLangProp || (inputLang === "en" ? "bn" : otherLang(inputLang)),
+    [inputLang, targetLangProp]
   );
 
   const requestPreview = useCallback(

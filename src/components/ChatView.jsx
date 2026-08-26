@@ -21,10 +21,10 @@ function groupByDay(messages) {
   return groups;
 }
 
-export default function ChatView({ contact, onBack, onAttach }) {
+export default function ChatView({ contact, onBack, onAttach, settings }) {
   const [messages, setMessages] = useState([]);
-  const [autoTranslate, setAutoTranslate] = useState(false);
-  const [inputLang, setInputLang] = useState("ja");
+  const [autoTranslate, setAutoTranslate] = useState(settings?.autoTranslate || false);
+  const [inputLang, setInputLang] = useState(settings?.sourceLang || "ja");
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
 
@@ -153,6 +153,7 @@ export default function ChatView({ contact, onBack, onAttach }) {
         setInputLang={setInputLang}
         onSend={handleSend}
         onAttach={onAttach}
+        targetLang={settings?.targetLang}
       />
     </div>
   );

@@ -1,12 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Sidebar from "./components/Sidebar";
 import ChatView from "./components/ChatView";
 import EmptyState from "./components/EmptyState";
 import MediaSheet from "./components/MediaSheet";
 import Login from "./components/Login";
+import Settings from "./components/Settings";
 import { boot, getContacts, createMessage, signOut, isDemo } from "./lib/store";
 import { supabase, isConfigured } from "./lib/supabase";
 import { cx } from "./lib/utils";
+
+const DEFAULT_SETTINGS = {
+  username: "You",
+  sourceLang: "ja",
+  targetLang: "bn",
+  theme: "light",
+  autoTranslate: false,
+};
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem("lingua_settings");
+    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
+  } catch {
+    return DEFAULT_SETTINGS;
+  }
+}
+
+function saveSettings(s) {
+  localStorage.setItem("lingua_settings", JSON.stringify(s));
+}
 
 export default function App() {
   const [authed, setAuthed] = useState(isDemo ? true : false);
@@ -14,6 +36,22 @@ export default function App() {
   const [activeId, setActiveId] = useState(null);
   const [mediaOpen, setMediaOpen] = useState(false);
   const [tick, setTick] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState(loadSettings);
+
+  // Apply theme
+  useEffect(() => {
+    const root = document.documentElement;
+    if (settings.theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    document.querySelector('meta[name="theme-color"]')?.setAttribute(
+      "content",
+      settings.theme === "dark" ? "#0f1419" : "#0b3b39"
+    );
+  }, [settings.theme]);
 
   useEffect(() => {
     if (isDemo) {
@@ -51,21 +89,19 @@ export default function App() {
       contactId: activeContact.user_id,
       text: "",
       mediaUrl: url,
-      sourceLang: "ja",
-      targetLang: "bn",
+      sourceLang: settings.sourceLang,
+      targetLang: settings.targetLang,
     });
     setTick((t) => t + 1);
   }
 
-  async function handleSignOut() {
-    await signOut();
-    if (isDemo) return;
-    setAuthed(false);
-    setContacts([]);
+  function handleSaveSettings(newSettings) {
+    setSettings(newSettings);
+    saveSettings(newSettings);
   }
 
   return (
-    <div className="grid h-full w-full grid-cols-1 bg-bg md:grid-cols-[minmax(300px,360px)_1fr]">
+    <div className={cx("grid h-full w-full grid-cols-1 md:grid-cols-[minmax(300px,360px)_1fr]", settings.theme === "dark" ? "bg-bg-dark" : "bg-bg")}>
       <div
         className={cx(
           "min-h-0 border-r border-line md:block",
@@ -80,8 +116,7 @@ export default function App() {
             setTick((t) => t + 1);
           }}
           tick={tick}
-          onSignOut={handleSignOut}
-          canSignOut={!isDemo}
+          onSettings={() => setSettingsOpen(true)}
         />
       </div>
 
@@ -92,6 +127,7 @@ export default function App() {
             contact={activeContact}
             onBack={() => setActiveId(null)}
             onAttach={() => setMediaOpen(true)}
+            settings={settings}
           />
         ) : (
           <EmptyState />
@@ -102,6 +138,13 @@ export default function App() {
         open={mediaOpen}
         onClose={() => setMediaOpen(false)}
         onSend={sendMedia}
+      />
+
+      <Settings
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        settings={settings}
+        onSave={handleSaveSettings}
       />
     </div>
   );
