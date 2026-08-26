@@ -2,10 +2,12 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Languages, CheckCheck, Sparkle } from "./icons";
 import { translateMessage } from "../lib/translation";
+import { getMe } from "../lib/store";
 import { formatTime, cx, isJapanese } from "../lib/utils";
 
 export default function MessageBubble({ msg, autoTranslate }) {
-  const mine = msg.sender_id === "u_me";
+  const me = getMe();
+  const mine = msg.sender_id === me.user_id;
   const foreign = !mine && isJapanese(msg.original_text);
 
   const [translation, setTranslation] = useState(
