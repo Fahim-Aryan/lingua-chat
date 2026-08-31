@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Sun, Moon, ArrowRightLeft, Check, Languages, Camera } from "./icons";
+import { X, User, Sun, Moon, Check, Languages, Camera } from "./icons";
 import { LANGUAGES, LANGUAGE_ORDER } from "../lib/languages";
 import { cx } from "../lib/utils";
 
@@ -11,7 +11,6 @@ export default function Settings({ open, onClose, settings, onSave }) {
   const [form, setForm] = useState({ ...settings });
   const fileRef = useRef(null);
 
-  // Reinitialize form when modal opens with fresh settings
   useEffect(() => {
     if (open) setForm({ ...settings });
   }, [open]);
@@ -56,7 +55,6 @@ export default function Settings({ open, onClose, settings, onSave }) {
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-md overflow-hidden rounded-3xl bg-surface shadow-float ring-1 ring-line"
           >
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-line px-6 py-4">
               <h2 className="text-[17px] font-extrabold text-ink">Settings</h2>
               <button onClick={onClose} className="btn-ghost h-9 w-9" aria-label="Close settings">
@@ -69,7 +67,6 @@ export default function Settings({ open, onClose, settings, onSave }) {
               <section>
                 <SectionTitle icon={<User size={15} />} title="Profile" />
                 <div className="mt-3 space-y-4">
-                  {/* Profile Picture */}
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <div
@@ -105,7 +102,6 @@ export default function Settings({ open, onClose, settings, onSave }) {
                     </div>
                   </div>
 
-                  {/* Username */}
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-muted">Username</span>
                     <input
@@ -118,9 +114,10 @@ export default function Settings({ open, onClose, settings, onSave }) {
                 </div>
               </section>
 
-              {/* Language Pair */}
+              {/* My Language */}
               <section>
-                <SectionTitle icon={<Languages size={15} />} title="Translate From" />
+                <SectionTitle icon={<Languages size={15} />} title="I speak" />
+                <p className="mt-1.5 text-[12.5px] text-muted">Messages from your contacts will be translated to this language.</p>
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   {LANGUAGE_ORDER.map((code) => {
                     const lang = LANGUAGES[code];
@@ -128,40 +125,7 @@ export default function Settings({ open, onClose, settings, onSave }) {
                     return (
                       <button
                         key={code}
-                        onClick={() => {
-                          update("sourceLang", code);
-                          const others = LANGUAGE_ORDER.filter((c) => c !== code);
-                          if (!others.includes(form.targetLang) || form.targetLang === code) {
-                            const preferred = { en: "ja", ja: "en", bn: "ja" };
-                            const auto = preferred[code] || others[0];
-                            update("targetLang", others.includes(auto) ? auto : others[0]);
-                          }
-                        }}
-                        className={cx(
-                          "flex flex-col items-center gap-1 rounded-2xl px-3 py-3 text-[13px] font-semibold ring-1 transition-all duration-200",
-                          active
-                            ? "bg-brand-soft text-brand-ink ring-brand/20 shadow-xs"
-                            : "bg-surface-2 text-muted ring-line hover:text-ink"
-                        )}
-                      >
-                        <span className="text-[18px]">{lang.flag}</span>
-                        <span>{lang.native}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section>
-                <SectionTitle icon={<ArrowRightLeft size={15} />} title="Translate To" />
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  {LANGUAGE_ORDER.filter((c) => c !== form.sourceLang).map((code) => {
-                    const lang = LANGUAGES[code];
-                    const active = form.targetLang === code;
-                    return (
-                      <button
-                        key={code}
-                        onClick={() => update("targetLang", code)}
+                        onClick={() => update("sourceLang", code)}
                         className={cx(
                           "flex flex-col items-center gap-1 rounded-2xl px-3 py-3 text-[13px] font-semibold ring-1 transition-all duration-200",
                           active
@@ -228,7 +192,6 @@ export default function Settings({ open, onClose, settings, onSave }) {
               </section>
             </div>
 
-            {/* Footer */}
             <div className="border-t border-line px-6 py-4">
               <button onClick={handleSave} className="btn-primary w-full py-3 text-[14px]">
                 Save settings
