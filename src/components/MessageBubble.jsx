@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Languages, CheckCheck, Sparkle } from "./icons";
+import { Languages, CheckCheck, Sparkle, Volume } from "./icons";
 import { translateMessage } from "../lib/translation";
+import { speakText } from "../lib/tts";
 import { getMe } from "../lib/store";
 import { formatTime, cx, isJapanese } from "../lib/utils";
 
@@ -85,14 +86,29 @@ export default function MessageBubble({ msg, autoTranslate }) {
                 mine ? "border-white/20 text-white/85" : "border-line text-muted"
               )}
             >
-              <span
-                className={cx(
-                  "mb-1 flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wider",
-                  mine ? "text-white/60" : "text-accent"
-                )}
-              >
-                <Sparkle size={11} /> translation
-              </span>
+              <div className="mb-1 flex items-center justify-between">
+                <span
+                  className={cx(
+                    "flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wider",
+                    mine ? "text-white/60" : "text-accent"
+                  )}
+                >
+                  <Sparkle size={11} /> translation
+                </span>
+                <button
+                  onClick={() => speakText(shown, msg.target_language)}
+                  className={cx(
+                    "flex h-6 w-6 items-center justify-center rounded-full transition-colors duration-200",
+                    mine
+                      ? "text-white/60 hover:bg-white/10 hover:text-white/90"
+                      : "text-faint hover:bg-surface-2 hover:text-ink"
+                  )}
+                  aria-label="Listen to pronunciation"
+                  title="Listen to pronunciation"
+                >
+                  <Volume size={13} />
+                </button>
+              </div>
               {shown}
             </motion.div>
           )}
