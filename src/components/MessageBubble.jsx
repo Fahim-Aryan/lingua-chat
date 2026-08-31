@@ -6,7 +6,7 @@ import { speakText } from "../lib/tts";
 import { getMe } from "../lib/store";
 import { formatTime, cx, isJapanese } from "../lib/utils";
 
-export default function MessageBubble({ msg, autoTranslate }) {
+export default function MessageBubble({ msg, autoTranslate, isNew }) {
   const me = getMe();
   const mine = msg.sender_id === me.user_id;
 
@@ -49,10 +49,11 @@ export default function MessageBubble({ msg, autoTranslate }) {
       <div className={cx("max-w-[78%] sm:max-w-[68%]")}>
         <div
           className={cx(
-            "relative px-4 py-2.5",
+            "relative px-4 py-2.5 transition-all duration-500",
             mine
               ? "rounded-[20px] rounded-br-md bg-outgoing text-outgoing-ink"
-              : "rounded-[20px] rounded-bl-md bg-surface text-ink shadow-xs ring-1 ring-line"
+              : "rounded-[20px] rounded-bl-md bg-surface text-ink shadow-xs ring-1 ring-line",
+            isNew && !mine && "ring-2 ring-brand/40 bg-brand-soft/30 shadow-md msg-highlight"
           )}
         >
           {msg.media_url && (

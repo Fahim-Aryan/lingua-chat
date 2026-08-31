@@ -25,6 +25,7 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
   const [messages, setMessages] = useState([]);
   const [autoTranslate, setAutoTranslate] = useState(settings?.autoTranslate || false);
   const [inputLang, setInputLang] = useState(settings?.sourceLang || "ja");
+  const [newMsgIds, setNewMsgIds] = useState(new Set());
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
 
@@ -46,11 +47,20 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
       if (Array.isArray(incoming)) {
         setMessages([...incoming]);
       } else {
-        setMessages((prev) =>
-          prev.some((m) => m.message_id === incoming.message_id)
-            ? prev
-            : [...prev, incoming]
-        );
+        setMessages((prev) => {
+          if (prev.some((m) => m.message_id === incoming.message_id)) return prev;
+          // Mark as new for highlight
+          setNewMsgIds((prev) => new Set([...prev, incoming.message_id]));
+          // Auto-scroll to new message
+          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100);
+          // Remove highlight after 3 seconds
+          setTimeout(() => setNewMsgIds((prev) => {
+            const next = new Set(prev);
+            next.delete(incoming.message_id);
+            return next;
+          }), 3000);
+          return [...prev, incoming];
+        });
       }
     });
     return () => {
@@ -149,7 +159,7 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
                 {g.label}
               </div>
               {g.items.map((m) => (
-                <MessageBubble key={m.message_id} msg={m} autoTranslate={autoTranslate} />
+                <MessageBubble key={m.message_id} msg={m} autoTranslate={autoTranslate} isNew={newMsgIds.has(m.message_id)} />
               ))}
             </div>
           ))}
@@ -163,7 +173,7 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
         setInputLang={setInputLang}
         onSend={handleSend}
         onAttach={onAttach}
-        targetLang={contact.preferred_language}
+        targetLang={settings?.targetLang || contact.preferred_language}
       />
     </div>
   );
