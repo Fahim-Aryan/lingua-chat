@@ -8,14 +8,14 @@ import { formatTime, cx, isJapanese } from "../lib/utils";
 export default function MessageBubble({ msg, autoTranslate }) {
   const me = getMe();
   const mine = msg.sender_id === me.user_id;
-  const foreign = !mine && isJapanese(msg.original_text);
 
   const [translation, setTranslation] = useState(
     autoTranslate ? msg.translated_text : null
   );
   const [loading, setLoading] = useState(false);
 
-  const canTranslate = foreign && !translation;
+  const hasTranslation = translation || msg.translated_text;
+  const canTranslate = !hasTranslation && msg.original_text;
 
   async function handleTranslate() {
     if (translation || loading) return;
@@ -36,9 +36,7 @@ export default function MessageBubble({ msg, autoTranslate }) {
     }
   }
 
-  const shown = autoTranslate && !translation && msg.translated_text
-    ? msg.translated_text
-    : translation;
+  const shown = translation || msg.translated_text;
 
   return (
     <motion.div
@@ -69,7 +67,8 @@ export default function MessageBubble({ msg, autoTranslate }) {
             <p
               className={cx(
                 "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
-                isJapanese(msg.original_text) && "font-jp"
+                isJapanese(msg.original_text) && "font-jp",
+                msg.source_language === "bn" && "font-bn"
               )}
             >
               {msg.original_text}

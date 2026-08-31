@@ -9,6 +9,7 @@
  * outside this file.
  */
 import { supabase, isConfigured } from "./supabase";
+import { translateMessage } from "./translation";
 
 export const isDemo = !isConfigured;
 
@@ -193,20 +194,33 @@ export async function lastMessage(contactId) {
 }
 
 export async function createMessage({ contactId, text, mediaUrl = null, sourceLang, targetLang }) {
+  let translatedText = null;
+  if (text.trim()) {
+    try {
+      const { translation } = await translateMessage({ text, sourceLang, targetLang });
+      translatedText = translation;
+    } catch (e) {
+      console.warn("[createMessage] translate failed, saving without translation", e);
+    }
+  }
+
   const msg = {
     sender_id: ME.user_id,
     receiver_id: contactId,
     original_text: text,
+    translated_text: translatedText,
     source_language: sourceLang,
     target_language: targetLang,
     media_url: mediaUrl,
   };
+
   if (isDemo) {
-    const full = { message_id: nextId(), translated_text: null, created_at: new Date().toISOString(), ...msg };
+    const full = { message_id: nextId(), created_at: new Date().toISOString(), ...msg };
     messagesByContact[contactId] = [...(messagesByContact[contactId] || []), full];
     emit(contactId);
     return full;
   }
+
   const { data, error } = await supabase.from("messages").insert(msg).select().single();
   if (error) {
     console.error("[createMessage]", error);
