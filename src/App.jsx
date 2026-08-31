@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS = {
   targetLang: "bn",
   theme: "light",
   autoTranslate: false,
+  profile_picture: "",
 };
 
 function loadSettings() {
@@ -91,12 +92,15 @@ export default function App() {
   }, [activeId]);
 
   useEffect(() => {
-    function onPopState() {
-      setActiveId(null);
+    function onPopState(e) {
+      // Only handle back if we have an active chat
+      if (activeId) {
+        setActiveId(null);
+      }
     }
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  }, [activeId]);
 
   if (!authed) return <Login onEnter={() => setAuthed(true)} />;
 

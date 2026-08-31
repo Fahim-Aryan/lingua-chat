@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, User, Sun, Moon, ArrowRightLeft, Check, Languages, Camera } from "./icons";
 import { LANGUAGES, LANGUAGE_ORDER } from "../lib/languages";
@@ -10,6 +10,11 @@ const THEME_LABELS = { light: "Light", dark: "Dark" };
 export default function Settings({ open, onClose, settings, onSave }) {
   const [form, setForm] = useState({ ...settings });
   const fileRef = useRef(null);
+
+  // Reinitialize form when modal opens with fresh settings
+  useEffect(() => {
+    if (open) setForm({ ...settings });
+  }, [open]);
 
   if (!open) return null;
 

@@ -28,6 +28,15 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
 
+  // Sync inputLang when settings change
+  useEffect(() => {
+    if (settings?.sourceLang) setInputLang(settings.sourceLang);
+  }, [settings?.sourceLang]);
+
+  useEffect(() => {
+    if (settings?.autoTranslate !== undefined) setAutoTranslate(settings.autoTranslate);
+  }, [settings?.autoTranslate]);
+
   useEffect(() => {
     let alive = true;
     getMessages(contact.user_id).then((list) => {
