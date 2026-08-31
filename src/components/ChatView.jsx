@@ -31,8 +31,8 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
 
-  // targetLang is ALWAYS the contact's language
-  const targetLang = contact.preferred_language || "ja";
+  // targetLang: settings er value优先, contact er language fallback
+  const targetLang = settings?.targetLang || contact.preferred_language || "ja";
   // myLang is ALWAYS my language (what I want to receive translations in)
   const myLang = settings?.sourceLang || "en";
 

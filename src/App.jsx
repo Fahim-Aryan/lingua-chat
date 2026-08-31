@@ -10,11 +10,12 @@ import { boot, getContacts, createMessage, isDemo } from "./lib/store";
 import { supabase, isConfigured } from "./lib/supabase";
 import { cx } from "./lib/utils";
 
-const SETTINGS_VERSION = 3;
+const SETTINGS_VERSION = 4;
 const DEFAULT_SETTINGS = {
   _v: SETTINGS_VERSION,
   username: "You",
   sourceLang: "en",
+  targetLang: "ja",
   theme: "light",
   autoTranslate: false,
   profile_picture: "",
@@ -113,7 +114,7 @@ export default function App() {
       text: "",
       mediaUrl: url,
       sourceLang: settings.sourceLang,
-      targetLang: activeContact.preferred_language,
+      targetLang: settings.targetLang,
     });
     setTick((t) => t + 1);
   }

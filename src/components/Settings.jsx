@@ -24,10 +24,7 @@ export default function Settings({ open, onClose, settings, onSave }) {
   function handleAvatar(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Image must be under 2 MB");
-      return;
-    }
+    if (file.size > 2 * 1024 * 1024) { alert("Image must be under 2 MB"); return; }
     const reader = new FileReader();
     reader.onload = () => update("profile_picture", reader.result);
     reader.readAsDataURL(file);
@@ -37,6 +34,8 @@ export default function Settings({ open, onClose, settings, onSave }) {
     onSave(form);
     onClose();
   }
+
+  const otherLangs = LANGUAGE_ORDER.filter((c) => c !== form.sourceLang);
 
   return (
     <AnimatePresence>
@@ -57,34 +56,20 @@ export default function Settings({ open, onClose, settings, onSave }) {
           >
             <div className="flex items-center justify-between border-b border-line px-6 py-4">
               <h2 className="text-[17px] font-extrabold text-ink">Settings</h2>
-              <button onClick={onClose} className="btn-ghost h-9 w-9" aria-label="Close settings">
-                <X size={18} />
-              </button>
+              <button onClick={onClose} className="btn-ghost h-9 w-9" aria-label="Close"><X size={18} /></button>
             </div>
 
             <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-6">
+              {/* Profile */}
               <section>
                 <SectionTitle icon={<User size={15} />} title="Profile" />
                 <div className="mt-3 space-y-4">
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div
-                        className={cx(
-                          "flex h-20 w-20 items-center justify-center rounded-full ring-2 ring-line overflow-hidden",
-                          form.profile_picture ? "" : "bg-brand-soft"
-                        )}
-                      >
-                        {form.profile_picture ? (
-                          <img src={form.profile_picture} alt="Profile" className="h-full w-full object-cover" />
-                        ) : (
-                          <User size={32} className="text-brand" />
-                        )}
+                      <div className={cx("flex h-20 w-20 items-center justify-center rounded-full ring-2 ring-line overflow-hidden", form.profile_picture ? "" : "bg-brand-soft")}>
+                        {form.profile_picture ? <img src={form.profile_picture} alt="Profile" className="h-full w-full object-cover" /> : <User size={32} className="text-brand" />}
                       </div>
-                      <button
-                        onClick={() => fileRef.current?.click()}
-                        className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white shadow-sm ring-2 ring-surface hover:bg-brand-hover"
-                        aria-label="Change profile picture"
-                      >
+                      <button onClick={() => fileRef.current?.click()} className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white shadow-sm ring-2 ring-surface hover:bg-brand-hover" aria-label="Change photo">
                         <Camera size={13} />
                       </button>
                       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
@@ -94,24 +79,17 @@ export default function Settings({ open, onClose, settings, onSave }) {
                       <p>Click camera icon to change</p>
                     </div>
                   </div>
-
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-muted">Username</span>
-                    <input
-                      className="input-field"
-                      value={form.username}
-                      onChange={(e) => update("username", e.target.value)}
-                      placeholder="Your name"
-                    />
+                    <input className="input-field" value={form.username} onChange={(e) => update("username", e.target.value)} placeholder="Your name" />
                   </label>
                 </div>
               </section>
 
+              {/* I speak */}
               <section>
                 <SectionTitle icon={<Languages size={15} />} title="I speak" />
-                <p className="mt-1.5 text-[12.5px] text-muted">
-                  Incoming messages will be translated to this language.
-                </p>
+                <p className="mt-1.5 text-[12.5px] text-muted">Type messages in this language.</p>
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   {LANGUAGE_ORDER.map((code) => {
                     const lang = LANGUAGES[code];
@@ -119,12 +97,17 @@ export default function Settings({ open, onClose, settings, onSave }) {
                     return (
                       <button
                         key={code}
-                        onClick={() => update("sourceLang", code)}
+                        onClick={() => {
+                          update("sourceLang", code);
+                          if (form.targetLang === code || !otherLangs.includes(form.targetLang)) {
+                            const preferred = { en: "ja", ja: "en", bn: "ja" };
+                            const auto = preferred[code];
+                            update("targetLang", otherLangs.includes(auto) ? auto : otherLangs[0]);
+                          }
+                        }}
                         className={cx(
                           "flex flex-col items-center gap-1 rounded-2xl px-3 py-3 text-[13px] font-semibold ring-1 transition-all duration-200",
-                          active
-                            ? "bg-brand-soft text-brand-ink ring-brand/20 shadow-xs"
-                            : "bg-surface-2 text-muted ring-line hover:text-ink"
+                          active ? "bg-brand-soft text-brand-ink ring-brand/20 shadow-xs" : "bg-surface-2 text-muted ring-line hover:text-ink"
                         )}
                       >
                         <span className="text-[18px]">{lang.flag}</span>
@@ -135,47 +118,51 @@ export default function Settings({ open, onClose, settings, onSave }) {
                 </div>
               </section>
 
+              {/* Translate to */}
               <section>
-                <SectionTitle icon={form.theme === "dark" ? <Moon size={15} /> : <Sun size={15} />} title="Appearance" />
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {THEMES.map((t) => {
-                    const active = form.theme === t;
+                <SectionTitle icon={<Languages size={15} />} title="Translate to" />
+                <p className="mt-1.5 text-[12.5px] text-muted">Your messages will be translated to this language.</p>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {otherLangs.map((code) => {
+                    const lang = LANGUAGES[code];
+                    const active = form.targetLang === code;
                     return (
                       <button
-                        key={t}
-                        onClick={() => update("theme", t)}
+                        key={code}
+                        onClick={() => update("targetLang", code)}
                         className={cx(
-                          "flex items-center gap-2.5 rounded-2xl px-4 py-3 text-[13px] font-semibold ring-1 transition-all duration-200",
-                          active
-                            ? "bg-brand-soft text-brand-ink ring-brand/20 shadow-xs"
-                            : "bg-surface-2 text-muted ring-line hover:text-ink"
+                          "flex flex-col items-center gap-1 rounded-2xl px-3 py-3 text-[13px] font-semibold ring-1 transition-all duration-200",
+                          active ? "bg-brand-soft text-brand-ink ring-brand/20 shadow-xs" : "bg-surface-2 text-muted ring-line hover:text-ink"
                         )}
                       >
-                        {t === "dark" ? <Moon size={16} /> : <Sun size={16} />}
-                        {THEME_LABELS[t]}
-                        {active && <Check size={14} className="ml-auto text-brand" />}
+                        <span className="text-[18px]">{lang.flag}</span>
+                        <span>{lang.native}</span>
                       </button>
                     );
                   })}
                 </div>
               </section>
 
+              {/* Theme */}
+              <section>
+                <SectionTitle icon={form.theme === "dark" ? <Moon size={15} /> : <Sun size={15} />} title="Appearance" />
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  {THEMES.map((t) => (
+                    <button key={t} onClick={() => update("theme", t)} className={cx("flex items-center gap-2.5 rounded-2xl px-4 py-3 text-[13px] font-semibold ring-1 transition-all duration-200", form.theme === t ? "bg-brand-soft text-brand-ink ring-brand/20 shadow-xs" : "bg-surface-2 text-muted ring-line hover:text-ink")}>
+                      {t === "dark" ? <Moon size={16} /> : <Sun size={16} />}
+                      {THEME_LABELS[t]}
+                      {form.theme === t && <Check size={14} className="ml-auto text-brand" />}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* Auto-translate */}
               <section>
                 <SectionTitle icon={<Languages size={15} />} title="Auto-translate incoming" />
                 <div className="mt-3">
-                  <button
-                    onClick={() => update("autoTranslate", !form.autoTranslate)}
-                    className={cx(
-                      "relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200",
-                      form.autoTranslate ? "bg-brand" : "bg-line-strong"
-                    )}
-                  >
-                    <span
-                      className={cx(
-                        "inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200",
-                        form.autoTranslate ? "translate-x-6" : "translate-x-1"
-                      )}
-                    />
+                  <button onClick={() => update("autoTranslate", !form.autoTranslate)} className={cx("relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200", form.autoTranslate ? "bg-brand" : "bg-line-strong")}>
+                    <span className={cx("inline-block h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200", form.autoTranslate ? "translate-x-6" : "translate-x-1")} />
                   </button>
                   <span className="ml-3 text-[13px] text-muted">
                     {form.autoTranslate ? "ON — incoming messages auto-translated" : "OFF — tap Translate manually"}
@@ -185,9 +172,7 @@ export default function Settings({ open, onClose, settings, onSave }) {
             </div>
 
             <div className="border-t border-line px-6 py-4">
-              <button onClick={handleSave} className="btn-primary w-full py-3 text-[14px]">
-                Save settings
-              </button>
+              <button onClick={handleSave} className="btn-primary w-full py-3 text-[14px]">Save settings</button>
             </div>
           </motion.div>
         </motion.div>
