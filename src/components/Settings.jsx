@@ -131,8 +131,11 @@ export default function Settings({ open, onClose, settings, onSave }) {
                         onClick={() => {
                           update("sourceLang", code);
                           const others = LANGUAGE_ORDER.filter((c) => c !== code);
-                          if (others.includes(form.targetLang)) return;
-                          update("targetLang", others[0]);
+                          if (!others.includes(form.targetLang) || form.targetLang === code) {
+                            const preferred = { en: "ja", ja: "en", bn: "ja" };
+                            const auto = preferred[code] || others[0];
+                            update("targetLang", others.includes(auto) ? auto : others[0]);
+                          }
                         }}
                         className={cx(
                           "flex flex-col items-center gap-1 rounded-2xl px-3 py-3 text-[13px] font-semibold ring-1 transition-all duration-200",

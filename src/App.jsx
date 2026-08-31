@@ -10,7 +10,9 @@ import { boot, getContacts, createMessage, signOut, isDemo } from "./lib/store";
 import { supabase, isConfigured } from "./lib/supabase";
 import { cx } from "./lib/utils";
 
+const SETTINGS_VERSION = 2;
 const DEFAULT_SETTINGS = {
+  _v: SETTINGS_VERSION,
   username: "You",
   sourceLang: "en",
   targetLang: "ja",
@@ -22,7 +24,13 @@ const DEFAULT_SETTINGS = {
 function loadSettings() {
   try {
     const raw = localStorage.getItem("lingua_settings");
-    return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
+    if (!raw) return DEFAULT_SETTINGS;
+    const parsed = JSON.parse(raw);
+    if (parsed._v !== SETTINGS_VERSION) {
+      localStorage.removeItem("lingua_settings");
+      return DEFAULT_SETTINGS;
+    }
+    return { ...DEFAULT_SETTINGS, ...parsed };
   } catch {
     return DEFAULT_SETTINGS;
   }
