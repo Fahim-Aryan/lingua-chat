@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Languages, CheckCheck, Sparkle, Volume } from "./icons";
+import { Languages, CheckCheck, Sparkle, Volume, Trash2 } from "./icons";
 import { translateMessage } from "../lib/translation";
 import { speakText } from "../lib/tts";
 import { getMe } from "../lib/store";
 import { formatTime, cx, isJapanese } from "../lib/utils";
 
-export default function MessageBubble({ msg, autoTranslate, isNew }) {
+export default function MessageBubble({ msg, autoTranslate, isNew, onDelete }) {
   const me = getMe();
   const mine = msg.sender_id === me.user_id;
 
@@ -14,6 +14,17 @@ export default function MessageBubble({ msg, autoTranslate, isNew }) {
     autoTranslate ? msg.translated_text : null
   );
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function close(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [menuOpen]);
 
   const hasTranslation = translation || msg.translated_text;
   const canTranslate = !hasTranslation && msg.original_text;
@@ -44,9 +55,42 @@ export default function MessageBubble({ msg, autoTranslate, isNew }) {
       initial={{ opacity: 0, y: 6, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-      className={cx("flex w-full", mine ? "justify-end" : "justify-start")}
+      className={cx("flex w-full group", mine ? "justify-end" : "justify-start")}
+      onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
     >
-      <div className={cx("max-w-[78%] sm:max-w-[68%]")}>
+      <div className={cx("max-w-[78%] sm:max-w-[68%] relative")} ref={menuRef}>
+        {/* Context menu */}
+        {menuOpen && (
+          <div className={cx(
+            "absolute z-50 mb-1 w-40 overflow-hidden rounded-xl bg-surface py-1 shadow-float ring-1 ring-line",
+            mine ? "right-0" : "left-0"
+          )}>
+            <button
+              onClick={() => { speakText(msg.original_text, msg.source_language); setMenuOpen(false); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-ink hover:bg-surface-2"
+            >
+              <Volume size={14} /> Listen
+            </button>
+            <button
+              onClick={() => { handleTranslate(); setMenuOpen(false); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-ink hover:bg-surface-2"
+            >
+              <Languages size={14} /> Translate
+            </button>
+            {mine && (
+              <>
+                <hr className="my-1 border-line" />
+                <button
+                  onClick={() => { onDelete?.(); setMenuOpen(false); }}
+                  className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-red-500 hover:bg-red-50"
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
         <div
           className={cx(
             "relative px-4 py-2.5 transition-all duration-500",
@@ -105,7 +149,6 @@ export default function MessageBubble({ msg, autoTranslate, isNew }) {
                       : "text-faint hover:bg-surface-2 hover:text-ink"
                   )}
                   aria-label="Listen to pronunciation"
-                  title="Listen to pronunciation"
                 >
                   <Volume size={13} />
                 </button>

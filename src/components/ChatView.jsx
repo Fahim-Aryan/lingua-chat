@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Avatar from "./Avatar";
 import MessageBubble from "./MessageBubble";
 import Composer from "./Composer";
-import { ArrowLeft, Phone, Video, Dots, Languages, Sparkle } from "./icons";
-import { getMessages, subscribe, createMessage, simulateReply, isDemo } from "../lib/store";
+import ChatMenu from "./ChatMenu";
+import { ArrowLeft, Phone, Video, Dots, Languages, Sparkle, ChevronDown } from "./icons";
+import { getMessages, subscribe, createMessage, simulateReply, deleteMessage, clearChat, isDemo } from "../lib/store";
 import { formatDayLabel, cx } from "../lib/utils";
 import { LANGUAGES } from "../lib/languages";
 
@@ -26,10 +27,10 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
   const [autoTranslate, setAutoTranslate] = useState(settings?.autoTranslate || false);
   const [inputLang, setInputLang] = useState(settings?.sourceLang || "ja");
   const [newMsgIds, setNewMsgIds] = useState(new Set());
+  const [unreadCount, setUnreadCount] = useState(0);
   const scrollRef = useRef(null);
   const bottomRef = useRef(null);
 
-  // Sync inputLang when settings change
   useEffect(() => {
     if (settings?.sourceLang) setInputLang(settings.sourceLang);
   }, [settings?.sourceLang]);
@@ -49,29 +50,39 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
       } else {
         setMessages((prev) => {
           if (prev.some((m) => m.message_id === incoming.message_id)) return prev;
-          // Mark as new for highlight
+          const me = prev[0]?.sender_id ? null : "u_me";
+          const isFromOther = incoming.sender_id !== "u_me";
           setNewMsgIds((prev) => new Set([...prev, incoming.message_id]));
-          // Auto-scroll to new message
-          setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100);
-          // Remove highlight after 3 seconds
-          setTimeout(() => setNewMsgIds((prev) => {
-            const next = new Set(prev);
-            next.delete(incoming.message_id);
-            return next;
-          }), 3000);
+          if (isFromOther) setUnreadCount((c) => c + 1);
+          setTimeout(() => {
+            setNewMsgIds((prev) => {
+              const next = new Set(prev);
+              next.delete(incoming.message_id);
+              return next;
+            });
+          }, 3000);
           return [...prev, incoming];
         });
       }
     });
-    return () => {
-      alive = false;
-      unsub();
-    };
+    return () => { alive = false; unsub(); };
   }, [contact.user_id]);
+
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (atBottom) setUnreadCount(0);
+  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length]);
+
+  function scrollToBottom() {
+    setUnreadCount(0);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }
 
   function handleSend({ text, sourceLang, targetLang }) {
     const finalTarget = targetLang || contact.preferred_language || "ja";
@@ -82,6 +93,16 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
     }
   }
 
+  function handleDelete(msgId) {
+    deleteMessage(contact.user_id, msgId);
+    setMessages((prev) => prev.filter((m) => m.message_id !== msgId));
+  }
+
+  function handleClearChat() {
+    clearChat(contact.user_id);
+    setMessages([]);
+  }
+
   const groups = useMemo(() => groupByDay(messages), [messages]);
   const lang = LANGUAGES[contact.preferred_language];
 
@@ -89,11 +110,7 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
     <div className="flex h-full min-h-0 flex-col">
       {/* Header */}
       <header className="z-30 flex items-center gap-3 border-b border-line bg-surface/80 px-3 py-2.5 backdrop-blur-xl sm:px-4">
-        <button
-          onClick={onBack}
-          className="btn-ghost h-9 w-9 md:hidden"
-          aria-label="Back to conversations"
-        >
+        <button onClick={onBack} className="btn-ghost h-9 w-9 md:hidden" aria-label="Back">
           <ArrowLeft size={20} />
         </button>
         <Avatar name={contact.username} accent={contact.accent} status={contact.status} size={44} />
@@ -116,25 +133,19 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
           onClick={() => setAutoTranslate((v) => !v)}
           className={cx(
             "hidden items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold ring-1 transition-all duration-200 sm:inline-flex",
-            autoTranslate
-              ? "bg-accent-soft text-accent ring-accent/20 shadow-xs"
-              : "text-muted ring-line hover:text-ink hover:bg-surface-2"
+            autoTranslate ? "bg-accent-soft text-accent ring-accent/20 shadow-xs" : "text-muted ring-line hover:text-ink hover:bg-surface-2"
           )}
           aria-pressed={autoTranslate}
-          title="Automatically translate incoming messages"
         >
           <Languages size={15} />
           Auto-translate
-          <span className={cx(
-            "h-1.5 w-1.5 rounded-full transition-colors",
-            autoTranslate ? "bg-accent" : "bg-line-strong"
-          )} />
+          <span className={cx("h-1.5 w-1.5 rounded-full transition-colors", autoTranslate ? "bg-accent" : "bg-line-strong")} />
         </button>
 
         <div className="flex items-center">
           <button className="btn-ghost h-9 w-9" aria-label="Voice call"><Phone size={18} /></button>
           <button className="btn-ghost hidden h-9 w-9 sm:grid" aria-label="Video call"><Video size={18} /></button>
-          <button className="btn-ghost h-9 w-9" aria-label="More options"><Dots size={18} /></button>
+          <ChatMenu onClearChat={handleClearChat} contactName={contact.username} />
         </div>
       </header>
 
@@ -150,7 +161,7 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
       </button>
 
       {/* Messages */}
-      <div ref={scrollRef} className="chat-canvas min-h-0 flex-1 overflow-y-auto scrollbar-thin">
+      <div ref={scrollRef} onScroll={handleScroll} className="chat-canvas min-h-0 flex-1 overflow-y-auto scrollbar-thin relative">
         <div className="mx-auto flex max-w-3xl flex-col gap-3 px-3 py-6 sm:px-4">
           <IntroCard contact={contact} />
           {groups.map((g) => (
@@ -159,12 +170,29 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
                 {g.label}
               </div>
               {g.items.map((m) => (
-                <MessageBubble key={m.message_id} msg={m} autoTranslate={autoTranslate} isNew={newMsgIds.has(m.message_id)} />
+                <MessageBubble
+                  key={m.message_id}
+                  msg={m}
+                  autoTranslate={autoTranslate}
+                  isNew={newMsgIds.has(m.message_id)}
+                  onDelete={() => handleDelete(m.message_id)}
+                />
               ))}
             </div>
           ))}
           <div ref={bottomRef} />
         </div>
+
+        {/* New message notification bar */}
+        {unreadCount > 0 && (
+          <button
+            onClick={scrollToBottom}
+            className="sticky bottom-2 z-20 mx-auto flex w-fit items-center gap-2 rounded-full bg-brand px-4 py-2 text-[13px] font-semibold text-white shadow-lg transition-all duration-300 hover:bg-brand-hover hover:shadow-xl"
+          >
+            <ChevronDown size={16} />
+            You have {unreadCount} new message{unreadCount > 1 ? "s" : ""}
+          </button>
+        )}
       </div>
 
       {/* Composer */}

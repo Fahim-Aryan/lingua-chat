@@ -260,6 +260,31 @@ function emit(contactId) {
   if (set) set.forEach((fn) => fn(messagesByContact[contactId]));
 }
 
+export function deleteMessage(contactId, messageId) {
+  if (isDemo) {
+    messagesByContact[contactId] = (messagesByContact[contactId] || []).filter(
+      (m) => m.message_id !== messageId
+    );
+    emit(contactId);
+    return;
+  }
+  supabase.from("messages").delete().eq("message_id", messageId).then(() => emit(contactId));
+}
+
+export function clearChat(contactId) {
+  if (isDemo) {
+    messagesByContact[contactId] = [];
+    emit(contactId);
+    return;
+  }
+  const me = ME.user_id;
+  supabase
+    .from("messages")
+    .delete()
+    .or(`and(sender_id.eq.${me},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${me})`)
+    .then(() => emit(contactId));
+}
+
 let channel = null;
 
 /**
