@@ -6,7 +6,7 @@ import { speakText } from "../lib/tts";
 import { getMe } from "../lib/store";
 import { formatTime, cx, isJapanese } from "../lib/utils";
 
-export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myLang }) {
+export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myLang, targetLang }) {
   const me = getMe();
   const mine = msg.sender_id === me.user_id;
 
@@ -37,7 +37,7 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myL
     }
     setLoading(true);
     try {
-      const target = mine ? (msg.target_language || "ja") : (myLang || "en");
+      const target = mine ? targetLang : myLang;
       const { translation: tr } = await translateMessage({
         text: msg.original_text,
         sourceLang: msg.source_language,
@@ -101,22 +101,15 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myL
           )}
         >
           {msg.media_url && (
-            <img
-              src={msg.media_url}
-              alt="Shared media"
-              loading="lazy"
-              className="mb-2 max-h-64 w-full rounded-xl object-cover"
-            />
+            <img src={msg.media_url} alt="Shared media" loading="lazy" className="mb-2 max-h-64 w-full rounded-xl object-cover" />
           )}
 
           {msg.original_text && (
-            <p
-              className={cx(
-                "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
-                isJapanese(msg.original_text) && "font-jp",
-                msg.source_language === "bn" && "font-bn"
-              )}
-            >
+            <p className={cx(
+              "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
+              isJapanese(msg.original_text) && "font-jp",
+              msg.source_language === "bn" && "font-bn"
+            )}>
               {msg.original_text}
             </p>
           )}
@@ -132,23 +125,19 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myL
               )}
             >
               <div className="mb-1 flex items-center justify-between">
-                <span
-                  className={cx(
-                    "flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wider",
-                    mine ? "text-white/60" : "text-accent"
-                  )}
-                >
+                <span className={cx(
+                  "flex items-center gap-1 text-[10.5px] font-bold uppercase tracking-wider",
+                  mine ? "text-white/60" : "text-accent"
+                )}>
                   <Sparkle size={11} /> translation
                 </span>
                 <button
-                  onClick={() => speakText(shown, mine ? msg.target_language : myLang)}
+                  onClick={() => speakText(shown, mine ? targetLang : myLang)}
                   className={cx(
                     "flex h-6 w-6 items-center justify-center rounded-full transition-colors duration-200",
-                    mine
-                      ? "text-white/60 hover:bg-white/10 hover:text-white/90"
-                      : "text-faint hover:bg-surface-2 hover:text-ink"
+                    mine ? "text-white/60 hover:bg-white/10 hover:text-white/90" : "text-faint hover:bg-surface-2 hover:text-ink"
                   )}
-                  aria-label="Listen to pronunciation"
+                  aria-label="Listen"
                 >
                   <Volume size={13} />
                 </button>
@@ -157,12 +146,10 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myL
             </motion.div>
           )}
 
-          <div
-            className={cx(
-              "mt-1 flex items-center justify-end gap-1 text-[10.5px]",
-              mine ? "text-white/60" : "text-faint"
-            )}
-          >
+          <div className={cx(
+            "mt-1 flex items-center justify-end gap-1 text-[10.5px]",
+            mine ? "text-white/60" : "text-faint"
+          )}>
             {formatTime(msg.created_at)}
             {mine && <CheckCheck size={14} />}
           </div>

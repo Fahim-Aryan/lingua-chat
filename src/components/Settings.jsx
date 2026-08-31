@@ -63,7 +63,6 @@ export default function Settings({ open, onClose, settings, onSave }) {
             </div>
 
             <div className="max-h-[70vh] overflow-y-auto px-6 py-5 space-y-6">
-              {/* Profile */}
               <section>
                 <SectionTitle icon={<User size={15} />} title="Profile" />
                 <div className="mt-3 space-y-4">
@@ -88,13 +87,7 @@ export default function Settings({ open, onClose, settings, onSave }) {
                       >
                         <Camera size={13} />
                       </button>
-                      <input
-                        ref={fileRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatar}
-                      />
+                      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatar} />
                     </div>
                     <div className="text-[12.5px] text-muted">
                       <p className="font-medium text-ink">Profile picture</p>
@@ -114,10 +107,11 @@ export default function Settings({ open, onClose, settings, onSave }) {
                 </div>
               </section>
 
-              {/* My Language */}
               <section>
                 <SectionTitle icon={<Languages size={15} />} title="I speak" />
-                <p className="mt-1.5 text-[12.5px] text-muted">Messages from your contacts will be translated to this language.</p>
+                <p className="mt-1.5 text-[12.5px] text-muted">
+                  Incoming messages will be translated to this language.
+                </p>
                 <div className="mt-3 grid grid-cols-3 gap-2">
                   {LANGUAGE_ORDER.map((code) => {
                     const lang = LANGUAGES[code];
@@ -141,7 +135,6 @@ export default function Settings({ open, onClose, settings, onSave }) {
                 </div>
               </section>
 
-              {/* Theme */}
               <section>
                 <SectionTitle icon={form.theme === "dark" ? <Moon size={15} /> : <Sun size={15} />} title="Appearance" />
                 <div className="mt-3 grid grid-cols-2 gap-2">
@@ -167,7 +160,6 @@ export default function Settings({ open, onClose, settings, onSave }) {
                 </div>
               </section>
 
-              {/* Auto-translate */}
               <section>
                 <SectionTitle icon={<Languages size={15} />} title="Auto-translate incoming" />
                 <div className="mt-3">

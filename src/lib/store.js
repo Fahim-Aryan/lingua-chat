@@ -1,21 +1,8 @@
-/**
- * store.js — data layer with two modes.
- *
- * REAL  : Supabase (Auth + Postgres + Realtime + Storage), per PRD §3/§5.
- * DEMO  : the same interface served from in-memory mock data, so the app
- *         still runs before keys are configured.
- *
- * Language model:
- *   - sourceLang = what I type in = what I want to receive translations in
- *   - Send target = contact.preferred_language (always)
- *   - Receive target = my sourceLang (always)
- */
 import { supabase, isConfigured } from "./supabase";
 import { translateMessage } from "./translation";
 
 export const isDemo = !isConfigured;
 
-// ---------------------------------------------------------------- demo mode
 export const ME_DEMO = {
   user_id: "u_me",
   username: "You",
@@ -56,17 +43,14 @@ const SEED = {
 const messagesByContact = JSON.parse(JSON.stringify(SEED));
 const listeners = new Map();
 
-// ---------------------------------------------------------------- real mode
 let ME = ME_DEMO;
 let contacts = JSON.parse(JSON.stringify(CONTACTS_DEMO));
 
-/** deterministic accent from an id, so avatars stay stable per user */
 function accentFor(id) {
   const hues = [38, 250, 150, 20, 280, 90, 330, 200];
   let h = 0;
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) % 997;
-  const hue = hues[h % hues.length];
-  return `oklch(0.62 0.13 ${hue})`;
+  return `oklch(0.62 0.13 ${hues[h % hues.length]})`;
 }
 
 function shapeContact(row) {
@@ -80,119 +64,57 @@ function shapeContact(row) {
   };
 }
 
-/**
- * Boot real mode: load session + own profile + only friends.
- * Returns { me, contacts } or null when signed out / not configured.
- */
 export async function boot() {
   if (isDemo) return { me: ME_DEMO, contacts: CONTACTS_DEMO, signedIn: true };
-
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { signedIn: false };
-
-  const { data: me, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("user_id", session.user.id)
-    .maybeSingle();
+  const { data: me, error } = await supabase.from("profiles").select("*").eq("user_id", session.user.id).maybeSingle();
   if (error || !me) return { signedIn: false };
-
   ME = { ...me, user_id: me.user_id, profile_picture: me.profile_picture || "" };
-
-  // Only fetch friends
-  const { data: friendRows } = await supabase
-    .from("friends")
-    .select("friend_id")
-    .eq("user_id", session.user.id);
-
-  if (!friendRows || friendRows.length === 0) {
-    contacts = [];
-    return { me: ME, contacts, signedIn: true };
-  }
-
+  const { data: friendRows } = await supabase.from("friends").select("friend_id").eq("user_id", session.user.id);
+  if (!friendRows || friendRows.length === 0) { contacts = []; return { me: ME, contacts, signedIn: true }; }
   const friendIds = friendRows.map((r) => r.friend_id);
-
-  const { data: friendProfiles } = await supabase
-    .from("profiles")
-    .select("*")
-    .in("user_id", friendIds);
-
+  const { data: friendProfiles } = await supabase.from("profiles").select("*").in("user_id", friendIds);
   contacts = (friendProfiles || []).map(shapeContact);
   return { me: ME, contacts, signedIn: true };
 }
 
-/** Search profiles by username (for adding friends) */
 export async function searchUsers(query) {
   if (isDemo || !query.trim()) return [];
-  const { data } = await supabase
-    .from("profiles")
-    .select("user_id, username, preferred_language")
-    .ilike("username", `%${query.trim()}%`)
-    .neq("user_id", ME.user_id)
-    .limit(10);
+  const { data } = await supabase.from("profiles").select("user_id, username, preferred_language").ilike("username", `%${query.trim()}%`).neq("user_id", ME.user_id).limit(10);
   return data || [];
 }
 
-/** Add a friend (bidirectional) */
 export async function addFriend(friendId) {
   if (isDemo) return true;
-  const { error } = await supabase
-    .from("friends")
-    .insert({ user_id: ME.user_id, friend_id: friendId });
-  if (error) {
-    console.error("[addFriend]", error);
-    return false;
-  }
-  // Also add reverse so friend sees us
-  await supabase
-    .from("friends")
-    .insert({ user_id: friendId, friend_id: ME.user_id })
-    .catch(() => {});
+  const { error } = await supabase.from("friends").insert({ user_id: ME.user_id, friend_id: friendId });
+  if (error) return false;
+  await supabase.from("friends").insert({ user_id: friendId, friend_id: ME.user_id }).catch(() => {});
   return true;
 }
 
-/** Remove a friend (bidirectional) */
 export async function removeFriend(friendId) {
   if (isDemo) return;
-  await supabase
-    .from("friends")
-    .delete()
-    .eq("user_id", ME.user_id)
-    .eq("friend_id", friendId);
-  await supabase
-    .from("friends")
-    .delete()
-    .eq("user_id", friendId)
-    .eq("friend_id", ME.user_id);
+  await supabase.from("friends").delete().eq("user_id", ME.user_id).eq("friend_id", friendId);
+  await supabase.from("friends").delete().eq("user_id", friendId).eq("friend_id", ME.user_id);
 }
 
-export function getContacts() {
-  return contacts;
-}
-
-export function getMe() {
-  return ME;
-}
+export function getContacts() { return contacts; }
+export function getMe() { return ME; }
 
 export async function signOut() {
   if (isDemo) return;
   await supabase.auth.signOut();
 }
 
-// ---------------------------------------------------------------- messages
 export async function getMessages(contactId) {
   if (isDemo) return messagesByContact[contactId] || [];
-
   const me = ME.user_id;
   const { data, error } = await supabase
-    .from("messages")
-    .select("*")
+    .from("messages").select("*")
     .or(`and(sender_id.eq.${me},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${me})`)
     .order("created_at", { ascending: true });
-  if (error) {
-    console.error("[getMessages]", error);
-    return [];
-  }
+  if (error) return [];
   return data || [];
 }
 
@@ -208,10 +130,9 @@ export async function createMessage({ contactId, text, mediaUrl = null, sourceLa
       const { translation } = await translateMessage({ text, sourceLang, targetLang });
       translatedText = translation;
     } catch (e) {
-      console.warn("[createMessage] translate failed, saving without translation", e);
+      console.warn("[createMessage] translate failed", e);
     }
   }
-
   const msg = {
     sender_id: ME.user_id,
     receiver_id: contactId,
@@ -221,47 +142,37 @@ export async function createMessage({ contactId, text, mediaUrl = null, sourceLa
     target_language: targetLang,
     media_url: mediaUrl,
   };
-
   if (isDemo) {
     const full = { message_id: nextId(), created_at: new Date().toISOString(), ...msg };
     messagesByContact[contactId] = [...(messagesByContact[contactId] || []), full];
     emit(contactId);
     return full;
   }
-
   const { data, error } = await supabase.from("messages").insert(msg).select().single();
-  if (error) {
-    console.error("[createMessage]", error);
-    return null;
-  }
+  if (error) return null;
   return data;
 }
 
-/**
- * Demo only: pretend the other side answered.
- * myLang = what language I (the current user) speak = the translate TARGET for their message.
- */
 export function simulateReply(contactId, myLang = "en") {
   const replies = [
-    { text: "そうだね！", tr_en: "That's right!", tr_bn: "ঠিক বলেছো!" },
-    { text: "いいね", tr_en: "Nice!", tr_bn: "দারুণ!" },
-    { text: "また あとで", tr_en: "Talk later!", tr_bn: "পরে কথা হবে" },
-    { text: "だいじょうぶ", tr_en: "It's okay!", tr_bn: "সমস্যা নেই" },
-    { text: "たのしみ", tr_en: "Looking forward to it!", tr_bn: "অপেক্ষায় আছি" },
-    { text: "こんにちは", tr_en: "Hello!", tr_bn: "হ্যালো!" },
-    { text: "ありがとう", tr_en: "Thank you!", tr_bn: "ধন্যবাদ!" },
-    { text: "おはよう", tr_en: "Good morning!", tr_bn: "সুপ্রভাত!" },
+    { ja: "そうだね！", en: "That's right!", bn: "ঠিক বলেছো!" },
+    { ja: "いいね", en: "Nice!", bn: "দারুণ!" },
+    { ja: "また あとで", en: "Talk later!", bn: "পরে কথা হবে" },
+    { ja: "だいじょうぶ", en: "It's okay!", bn: "সমস্যা নেই" },
+    { ja: "たのしみ", en: "Looking forward to it!", bn: "অপেক্ষায় আছি" },
+    { ja: "こんにちは", en: "Hello!", bn: "হ্যালো!" },
+    { ja: "ありがとう", en: "Thank you!", bn: "ধন্যবাদ!" },
+    { ja: "おはよう", en: "Good morning!", bn: "সুপ্রভাত!" },
   ];
   const pick = replies[Math.floor(Math.random() * replies.length)];
-  const translated = myLang === "bn" ? pick.tr_bn : pick.tr_en;
   const msg = {
     message_id: nextId(),
     sender_id: contactId,
     receiver_id: ME.user_id,
-    original_text: pick.text,
+    original_text: pick.ja,
     source_language: "ja",
     target_language: myLang,
-    translated_text: translated,
+    translated_text: pick[myLang] || pick.en,
     media_url: null,
     created_at: new Date().toISOString(),
   };
@@ -269,7 +180,6 @@ export function simulateReply(contactId, myLang = "en") {
   emit(contactId);
 }
 
-// ---------------------------------------------------------------- realtime
 function emit(contactId) {
   const set = listeners.get(contactId);
   if (set) set.forEach((fn) => fn(messagesByContact[contactId]));
@@ -277,9 +187,7 @@ function emit(contactId) {
 
 export function deleteMessage(contactId, messageId) {
   if (isDemo) {
-    messagesByContact[contactId] = (messagesByContact[contactId] || []).filter(
-      (m) => m.message_id !== messageId
-    );
+    messagesByContact[contactId] = (messagesByContact[contactId] || []).filter((m) => m.message_id !== messageId);
     emit(contactId);
     return;
   }
@@ -293,40 +201,24 @@ export function clearChat(contactId) {
     return;
   }
   const me = ME.user_id;
-  supabase
-    .from("messages")
-    .delete()
+  supabase.from("messages").delete()
     .or(`and(sender_id.eq.${me},receiver_id.eq.${contactId}),and(sender_id.eq.${contactId},receiver_id.eq.${me})`)
     .then(() => emit(contactId));
 }
 
 let channel = null;
 
-/**
- * Subscribe to live message delivery. REAL mode uses a Supabase Realtime
- * channel; DEMO mode uses in-memory listeners. Returns an unsubscribe fn
- * synchronously so components can call it in useEffect cleanups.
- */
 export function subscribe(contactId, fn) {
   if (!listeners.has(contactId)) listeners.set(contactId, new Set());
   listeners.get(contactId).add(fn);
-
   if (!isDemo && !channel) {
-    channel = supabase
-      .channel("messages-live")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        (payload) => {
-          const msg = payload.new;
-          const otherId =
-            msg.sender_id === ME.user_id ? msg.receiver_id : msg.sender_id;
-          const set = listeners.get(otherId);
-          if (set) set.forEach((cb) => cb(msg));
-        }
-      )
-      .subscribe();
+    channel = supabase.channel("messages-live")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (payload) => {
+        const msg = payload.new;
+        const otherId = msg.sender_id === ME.user_id ? msg.receiver_id : msg.sender_id;
+        const set = listeners.get(otherId);
+        if (set) set.forEach((cb) => cb(msg));
+      }).subscribe();
   }
-
   return () => listeners.get(contactId)?.delete(fn);
 }
