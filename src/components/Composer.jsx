@@ -21,7 +21,7 @@ export default function Composer({ inputLang, setInputLang, onSend, onAttach, ta
   const romajiBuf = useRef("");
 
   const targetLang = useMemo(
-    () => targetLangProp || (inputLang === "en" ? "bn" : otherLang(inputLang)),
+    () => targetLangProp || otherLang(inputLang),
     [inputLang, targetLangProp]
   );
 
