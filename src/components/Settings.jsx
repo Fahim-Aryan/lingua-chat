@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, Sun, Moon, ArrowRightLeft, Check, Languages } from "./icons";
+import { X, User, Sun, Moon, ArrowRightLeft, Check, Languages, Camera } from "./icons";
 import { LANGUAGES, LANGUAGE_ORDER } from "../lib/languages";
 import { cx } from "../lib/utils";
 
@@ -9,11 +9,24 @@ const THEME_LABELS = { light: "Light", dark: "Dark" };
 
 export default function Settings({ open, onClose, settings, onSave }) {
   const [form, setForm] = useState({ ...settings });
+  const fileRef = useRef(null);
 
   if (!open) return null;
 
   function update(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function handleAvatar(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image must be under 2 MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => update("profile_picture", reader.result);
+    reader.readAsDataURL(file);
   }
 
   function handleSave() {
@@ -50,7 +63,44 @@ export default function Settings({ open, onClose, settings, onSave }) {
               {/* Profile */}
               <section>
                 <SectionTitle icon={<User size={15} />} title="Profile" />
-                <div className="mt-3 space-y-3">
+                <div className="mt-3 space-y-4">
+                  {/* Profile Picture */}
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div
+                        className={cx(
+                          "flex h-20 w-20 items-center justify-center rounded-full ring-2 ring-line overflow-hidden",
+                          form.profile_picture ? "" : "bg-brand-soft"
+                        )}
+                      >
+                        {form.profile_picture ? (
+                          <img src={form.profile_picture} alt="Profile" className="h-full w-full object-cover" />
+                        ) : (
+                          <User size={32} className="text-brand" />
+                        )}
+                      </div>
+                      <button
+                        onClick={() => fileRef.current?.click()}
+                        className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-brand text-white shadow-sm ring-2 ring-surface hover:bg-brand-hover"
+                        aria-label="Change profile picture"
+                      >
+                        <Camera size={13} />
+                      </button>
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatar}
+                      />
+                    </div>
+                    <div className="text-[12.5px] text-muted">
+                      <p className="font-medium text-ink">Profile picture</p>
+                      <p>Click camera icon to change</p>
+                    </div>
+                  </div>
+
+                  {/* Username */}
                   <label className="block">
                     <span className="mb-1.5 block text-[12px] font-semibold text-muted">Username</span>
                     <input

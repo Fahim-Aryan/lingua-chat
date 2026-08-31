@@ -83,6 +83,21 @@ export default function App() {
 
   const activeContact = contacts.find((c) => c.user_id === activeId) || null;
 
+  // Push browser history when opening a chat, so back button returns to chat list
+  useEffect(() => {
+    if (activeId) {
+      window.history.pushState({ chatId: activeId }, "");
+    }
+  }, [activeId]);
+
+  useEffect(() => {
+    function onPopState() {
+      setActiveId(null);
+    }
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
   if (!authed) return <Login onEnter={() => setAuthed(true)} />;
 
   function sendMedia(url) {
@@ -120,6 +135,7 @@ export default function App() {
           tick={tick}
           onSettings={() => setSettingsOpen(true)}
           onAddFriend={() => setAddFriendOpen(true)}
+          profilePicture={settings.profile_picture}
         />
       </div>
 

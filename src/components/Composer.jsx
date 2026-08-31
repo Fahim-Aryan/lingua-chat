@@ -120,7 +120,9 @@ export default function Composer({ inputLang, setInputLang, onSend, onAttach, ta
   }
 
   function toggleInputLang() {
-    setInputLang(otherLang(inputLang) === "en" ? "bn" : otherLang(inputLang));
+    const langs = ["ja", "bn", "en"];
+    const idx = langs.indexOf(inputLang);
+    setInputLang(langs[(idx + 1) % langs.length]);
   }
 
   const src = LANGUAGES[inputLang];

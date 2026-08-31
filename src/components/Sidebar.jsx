@@ -17,7 +17,7 @@ function Preview({ msg }) {
   );
 }
 
-export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings, onAddFriend }) {
+export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings, onAddFriend, profilePicture }) {
   const [query, setQuery] = useState("");
   const [previews, setPreviews] = useState({});
 
@@ -148,7 +148,7 @@ export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings
 
       {/* Self footer */}
       <footer className="flex items-center gap-3 border-t border-line px-4 py-3.5">
-        <Avatar name={me.username} accent="var(--brand)" size={40} />
+        <Avatar name={me.username} accent="var(--brand)" size={40} image={profilePicture} />
         <div className="min-w-0 flex-1 leading-tight">
           <div className="truncate text-[13.5px] font-semibold text-ink">{me.username}</div>
           <div className="mt-0.5 text-[11px] text-muted">

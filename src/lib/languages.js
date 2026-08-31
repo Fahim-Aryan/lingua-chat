@@ -12,7 +12,9 @@ export const LANGUAGES = {
 export const LANGUAGE_ORDER = ["bn", "ja", "en"];
 
 export function otherLang(code) {
-  return code === "ja" ? "bn" : "ja";
+  if (code === "ja") return "bn";
+  if (code === "bn") return "ja";
+  return "ja";
 }
 
 export function getTargetLang(sourceLang, settings) {
