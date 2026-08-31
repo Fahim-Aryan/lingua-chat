@@ -6,7 +6,7 @@ import { speakText } from "../lib/tts";
 import { getMe } from "../lib/store";
 import { formatTime, cx, isJapanese } from "../lib/utils";
 
-export default function MessageBubble({ msg, autoTranslate, isNew, onDelete }) {
+export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myLang }) {
   const me = getMe();
   const mine = msg.sender_id === me.user_id;
 
@@ -37,10 +37,11 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete }) {
     }
     setLoading(true);
     try {
+      const target = mine ? (msg.target_language || "ja") : (myLang || "en");
       const { translation: tr } = await translateMessage({
         text: msg.original_text,
         sourceLang: msg.source_language,
-        targetLang: msg.target_language,
+        targetLang: target,
       });
       setTranslation(tr);
     } finally {
@@ -59,7 +60,6 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete }) {
       onContextMenu={(e) => { e.preventDefault(); setMenuOpen(true); }}
     >
       <div className={cx("max-w-[78%] sm:max-w-[68%] relative")} ref={menuRef}>
-        {/* Context menu */}
         {menuOpen && (
           <div className={cx(
             "absolute z-50 mb-1 w-40 overflow-hidden rounded-xl bg-surface py-1 shadow-float ring-1 ring-line",
@@ -127,7 +127,7 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete }) {
               animate={{ opacity: 1, height: "auto" }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
               className={cx(
-                "mt-2 overflow-hidden border-t pt-2 text-[13.5px] leading-relaxed font-bn",
+                "mt-2 overflow-hidden border-t pt-2 text-[13.5px] leading-relaxed",
                 mine ? "border-white/20 text-white/85" : "border-line text-muted"
               )}
             >
@@ -141,7 +141,7 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete }) {
                   <Sparkle size={11} /> translation
                 </span>
                 <button
-                  onClick={() => speakText(shown, msg.target_language)}
+                  onClick={() => speakText(shown, mine ? msg.target_language : myLang)}
                   className={cx(
                     "flex h-6 w-6 items-center justify-center rounded-full transition-colors duration-200",
                     mine

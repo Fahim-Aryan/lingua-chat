@@ -3,7 +3,7 @@ import Avatar from "./Avatar";
 import MessageBubble from "./MessageBubble";
 import Composer from "./Composer";
 import ChatMenu from "./ChatMenu";
-import { ArrowLeft, Phone, Video, Dots, Languages, Sparkle, ChevronDown } from "./icons";
+import { ArrowLeft, Phone, Video, Languages, Sparkle, ChevronDown } from "./icons";
 import { getMessages, subscribe, createMessage, simulateReply, deleteMessage, clearChat, isDemo } from "../lib/store";
 import { formatDayLabel, cx } from "../lib/utils";
 import { LANGUAGES } from "../lib/languages";
@@ -25,7 +25,7 @@ function groupByDay(messages) {
 export default function ChatView({ contact, onBack, onAttach, settings }) {
   const [messages, setMessages] = useState([]);
   const [autoTranslate, setAutoTranslate] = useState(settings?.autoTranslate || false);
-  const [inputLang, setInputLang] = useState(settings?.sourceLang || "ja");
+  const [inputLang, setInputLang] = useState(settings?.sourceLang || "en");
   const [newMsgIds, setNewMsgIds] = useState(new Set());
   const [unreadCount, setUnreadCount] = useState(0);
   const scrollRef = useRef(null);
@@ -50,13 +50,12 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
       } else {
         setMessages((prev) => {
           if (prev.some((m) => m.message_id === incoming.message_id)) return prev;
-          const me = prev[0]?.sender_id ? null : "u_me";
+          setNewMsgIds((prevSet) => new Set([...prevSet, incoming.message_id]));
           const isFromOther = incoming.sender_id !== "u_me";
-          setNewMsgIds((prev) => new Set([...prev, incoming.message_id]));
           if (isFromOther) setUnreadCount((c) => c + 1);
           setTimeout(() => {
-            setNewMsgIds((prev) => {
-              const next = new Set(prev);
+            setNewMsgIds((prevSet) => {
+              const next = new Set(prevSet);
               next.delete(incoming.message_id);
               return next;
             });
@@ -85,11 +84,12 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
   }
 
   function handleSend({ text, sourceLang }) {
-    const finalTarget = contact.preferred_language || "ja";
-    createMessage({ contactId: contact.user_id, text, sourceLang, targetLang: finalTarget });
+    const targetLang = contact.preferred_language || "ja";
+    createMessage({ contactId: contact.user_id, text, sourceLang, targetLang });
     if (isDemo) {
       const delay = 1400 + Math.random() * 1600;
-      setTimeout(() => simulateReply(contact.user_id), delay);
+      const myLang = settings?.sourceLang || "en";
+      setTimeout(() => simulateReply(contact.user_id, myLang), delay);
     }
   }
 
@@ -143,8 +143,9 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
         </button>
 
         <div className="flex items-center">
-          <button className="btn-ghost h-9 w-9" aria-label="Voice call"><Phone size={18} /></button>
-          <button className="btn-ghost hidden h-9 w-9 sm:grid" aria-label="Video call"><Video size={18} /></button>
+          <button className="btn-ghost h-9 w-9" aria-label="Voice call">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          </button>
           <ChatMenu onClearChat={handleClearChat} contactName={contact.username} />
         </div>
       </header>
@@ -176,6 +177,7 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
                   autoTranslate={autoTranslate}
                   isNew={newMsgIds.has(m.message_id)}
                   onDelete={() => handleDelete(m.message_id)}
+                  myLang={settings?.sourceLang || "en"}
                 />
               ))}
             </div>

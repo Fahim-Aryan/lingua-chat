@@ -5,8 +5,10 @@
  * DEMO  : the same interface served from in-memory mock data, so the app
  *         still runs before keys are configured.
  *
- * The rest of the UI only talks to the functions below — no Supabase imports
- * outside this file.
+ * Language model:
+ *   - sourceLang = what I type in = what I want to receive translations in
+ *   - Send target = contact.preferred_language (always)
+ *   - Receive target = my sourceLang (always)
  */
 import { supabase, isConfigured } from "./supabase";
 import { translateMessage } from "./translation";
@@ -16,9 +18,9 @@ export const isDemo = !isConfigured;
 // ---------------------------------------------------------------- demo mode
 export const ME_DEMO = {
   user_id: "u_me",
-  username: "Ayan",
+  username: "You",
   profile_picture: "",
-  preferred_language: "bn",
+  preferred_language: "en",
 };
 
 export const CONTACTS_DEMO = [
@@ -34,15 +36,21 @@ const t = (minsAgo) => new Date(Date.now() - minsAgo * 60000).toISOString();
 
 const SEED = {
   u_yuki: [
-    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "こんばんは！", source_language: "ja", target_language: "bn", translated_text: "শুভ সন্ধ্যা!", media_url: null, created_at: t(58) },
-    { message_id: nextId(), sender_id: "u_me", receiver_id: "u_yuki", original_text: "こんばんは、げんきですか", source_language: "ja", target_language: "bn", translated_text: null, media_url: null, created_at: t(56) },
-    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "げんきです！たのしみ", source_language: "ja", target_language: "bn", translated_text: null, media_url: null, created_at: t(55) },
-    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "", source_language: "ja", target_language: "bn", translated_text: null, media_url: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=900&auto=format&fit=crop", created_at: t(40) },
-    { message_id: nextId(), sender_id: "u_me", receiver_id: "u_yuki", original_text: "また あした", source_language: "ja", target_language: "bn", translated_text: null, media_url: null, created_at: t(38) },
+    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "こんばんは！", source_language: "ja", target_language: "en", translated_text: "Good evening!", media_url: null, created_at: t(58) },
+    { message_id: nextId(), sender_id: "u_me", receiver_id: "u_yuki", original_text: "Good evening, how are you?", source_language: "en", target_language: "ja", translated_text: "こんばんは、お元気ですか？", media_url: null, created_at: t(56) },
+    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "げんきです！たのしみ", source_language: "ja", target_language: "en", translated_text: "I'm great! Looking forward to it.", media_url: null, created_at: t(55) },
+    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "", source_language: "ja", target_language: "en", translated_text: null, media_url: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=900&auto=format&fit=crop", created_at: t(40) },
+    { message_id: nextId(), sender_id: "u_me", receiver_id: "u_yuki", original_text: "See you tomorrow", source_language: "en", target_language: "ja", translated_text: "またあした", media_url: null, created_at: t(38) },
   ],
-  u_haru: [{ message_id: nextId(), sender_id: "u_haru", receiver_id: "u_me", original_text: "おなかすいた", source_language: "ja", target_language: "bn", translated_text: null, media_url: null, created_at: t(120) }],
-  u_sensei: [{ message_id: nextId(), sender_id: "u_sensei", receiver_id: "u_me", original_text: "おはようございます", source_language: "ja", target_language: "bn", translated_text: "সুপ্রভাত (ভদ্র রূপ)", media_url: null, created_at: t(300) }],
-  u_rin: [{ message_id: nextId(), sender_id: "u_rin", receiver_id: "u_me", original_text: "ありがとう", source_language: "ja", target_language: "bn", translated_text: null, media_url: null, created_at: t(1440) }],
+  u_haru: [
+    { message_id: nextId(), sender_id: "u_haru", receiver_id: "u_me", original_text: "おなかすいた", source_language: "ja", target_language: "en", translated_text: "I'm hungry.", media_url: null, created_at: t(120) },
+  ],
+  u_sensei: [
+    { message_id: nextId(), sender_id: "u_sensei", receiver_id: "u_me", original_text: "おはようございます", source_language: "ja", target_language: "en", translated_text: "Good morning! (polite)", media_url: null, created_at: t(300) },
+  ],
+  u_rin: [
+    { message_id: nextId(), sender_id: "u_rin", receiver_id: "u_me", original_text: "ありがとう", source_language: "ja", target_language: "en", translated_text: "Thank you!", media_url: null, created_at: t(1440) },
+  ],
 };
 
 const messagesByContact = JSON.parse(JSON.stringify(SEED));
@@ -229,24 +237,31 @@ export async function createMessage({ contactId, text, mediaUrl = null, sourceLa
   return data;
 }
 
-/** Demo only: pretend the other side answered over the realtime channel. */
-export function simulateReply(contactId) {
+/**
+ * Demo only: pretend the other side answered.
+ * myLang = what language I (the current user) speak = the translate TARGET for their message.
+ */
+export function simulateReply(contactId, myLang = "en") {
   const replies = [
-    { text: "そうだね！", tr: "ঠিক বলেছো!" },
-    { text: "いいね", tr: "দারুণ!" },
-    { text: "また あとで", tr: "পরে কথা হবে" },
-    { text: "だいじょうぶ", tr: "সমস্যা নেই" },
-    { text: "たのしみ", tr: "অপেক্ষায় আছি" },
+    { text: "そうだね！", tr_en: "That's right!", tr_bn: "ঠিক বলেছো!" },
+    { text: "いいね", tr_en: "Nice!", tr_bn: "দারুণ!" },
+    { text: "また あとで", tr_en: "Talk later!", tr_bn: "পরে কথা হবে" },
+    { text: "だいじょうぶ", tr_en: "It's okay!", tr_bn: "সমস্যা নেই" },
+    { text: "たのしみ", tr_en: "Looking forward to it!", tr_bn: "অপেক্ষায় আছি" },
+    { text: "こんにちは", tr_en: "Hello!", tr_bn: "হ্যালো!" },
+    { text: "ありがとう", tr_en: "Thank you!", tr_bn: "ধন্যবাদ!" },
+    { text: "おはよう", tr_en: "Good morning!", tr_bn: "সুপ্রভাত!" },
   ];
   const pick = replies[Math.floor(Math.random() * replies.length)];
+  const translated = myLang === "bn" ? pick.tr_bn : pick.tr_en;
   const msg = {
     message_id: nextId(),
     sender_id: contactId,
     receiver_id: ME.user_id,
     original_text: pick.text,
     source_language: "ja",
-    target_language: "bn",
-    translated_text: pick.tr,
+    target_language: myLang,
+    translated_text: translated,
     media_url: null,
     created_at: new Date().toISOString(),
   };

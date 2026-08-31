@@ -12,8 +12,8 @@ import { cx } from "./lib/utils";
 
 const DEFAULT_SETTINGS = {
   username: "You",
-  sourceLang: "ja",
-  targetLang: "bn",
+  sourceLang: "en",
+  targetLang: "ja",
   theme: "light",
   autoTranslate: false,
   profile_picture: "",
@@ -111,9 +111,8 @@ export default function App() {
       text: "",
       mediaUrl: url,
       sourceLang: settings.sourceLang,
-      targetLang: settings.targetLang,
+      targetLang: activeContact.preferred_language,
     });
-    setTick((t) => t + 1);
   }
 
   function handleSaveSettings(newSettings) {
