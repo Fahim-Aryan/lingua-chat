@@ -54,7 +54,8 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length]);
 
-  function handleSend({ text, sourceLang, targetLang }) {
+  function handleSend({ text, sourceLang }) {
+    const targetLang = contact.preferred_language || "ja";
     createMessage({ contactId: contact.user_id, text, sourceLang, targetLang });
     if (isDemo) {
       const delay = 1400 + Math.random() * 1600;
@@ -153,7 +154,7 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
         setInputLang={setInputLang}
         onSend={handleSend}
         onAttach={onAttach}
-        targetLang={settings?.targetLang}
+        targetLang={contact.preferred_language}
       />
     </div>
   );
