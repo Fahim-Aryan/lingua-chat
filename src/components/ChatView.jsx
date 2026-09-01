@@ -33,7 +33,7 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
 
   // targetLang: settings er value优先, contact er language fallback
   const targetLang = settings?.targetLang || contact.preferred_language || "ja";
-  // myLang is ALWAYS my language (what I want to receive translations in)
+  // myLang = the language I type in (also the language auto-replies are mocked in)
   const myLang = settings?.sourceLang || "en";
 
   useEffect(() => {
@@ -76,6 +76,41 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length]);
+
+  // Instant jump to the latest message on any message change (new msg, reply, etc.)
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const raf = requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; });
+    return () => cancelAnimationFrame(raf);
+  }, [messages]);
+
+  // Jump to bottom right when a chat opens (before images have even loaded).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const el = scrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    }, 250);
+    return () => clearTimeout(t);
+  }, [contact.user_id]);
+
+  // Keep the latest message above the keyboard when it pops up.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => {
+      requestAnimationFrame(() => {
+        const el = scrollRef.current;
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+    };
+    vv.addEventListener("resize", handler);
+    vv.addEventListener("scroll", handler);
+    return () => {
+      vv.removeEventListener("resize", handler);
+      vv.removeEventListener("scroll", handler);
+    };
+  }, []);
 
   function scrollToBottom() {
     setUnreadCount(0);
@@ -169,7 +204,6 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
                   autoTranslate={autoTranslate}
                   isNew={newMsgIds.has(m.message_id)}
                   onDelete={() => handleDelete(m.message_id)}
-                  myLang={myLang}
                   targetLang={targetLang}
                 />
               ))}

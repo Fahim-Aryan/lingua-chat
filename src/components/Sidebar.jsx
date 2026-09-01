@@ -17,7 +17,7 @@ function Preview({ msg }) {
   );
 }
 
-export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings, onAddFriend, profilePicture }) {
+export default function Sidebar({ contacts, activeId, unread = {}, onSelect, tick, onSettings, onAddFriend, profilePicture }) {
   const [query, setQuery] = useState("");
   const [previews, setPreviews] = useState({});
 
@@ -115,15 +115,22 @@ export default function Sidebar({ contacts, activeId, onSelect, tick, onSettings
               )}
               <Avatar name={c.username} accent={c.accent} status={c.status} size={48} />
               <span className="min-w-0 flex-1">
-                <span className="flex items-baseline justify-between gap-2">
+                <span className="flex items-center justify-between gap-2">
                   <span className={cx(
                     "truncate text-[14.5px] font-semibold",
                     active ? "text-brand-ink" : "text-ink"
                   )}>
                     {c.username}
                   </span>
-                  <span className="shrink-0 text-[11px] font-medium text-faint">
-                    {last ? relativeShort(last.created_at) : ""}
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    <span className="text-[11px] font-medium text-faint">
+                      {last ? relativeShort(last.created_at) : ""}
+                    </span>
+                    {unread[c.user_id] > 0 && (
+                      <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-brand px-1.5 text-[10px] font-bold text-white shadow-sm">
+                        {unread[c.user_id] > 99 ? "99+" : unread[c.user_id]}
+                      </span>
+                    )}
                   </span>
                 </span>
                 <span className="mt-1 flex items-center gap-1 text-[13px] text-muted">

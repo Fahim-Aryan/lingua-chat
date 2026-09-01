@@ -6,7 +6,7 @@ import { speakText } from "../lib/tts";
 import { getMe } from "../lib/store";
 import { formatTime, cx, isJapanese } from "../lib/utils";
 
-export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myLang, targetLang }) {
+export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, targetLang }) {
   const me = getMe();
   const mine = msg.sender_id === me.user_id;
 
@@ -29,6 +29,11 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myL
   const hasTranslation = translation || msg.translated_text;
   const canTranslate = !hasTranslation && msg.original_text;
 
+  // Language this message is meant to be read in:
+  // my own outgoing messages -> the recipient's language (targetLang);
+  // incoming messages       -> the language the sender encoded (msg.target_language).
+  const readLang = mine ? targetLang : (msg.target_language || targetLang);
+
   async function handleTranslate() {
     if (translation || loading) return;
     if (msg.translated_text) {
@@ -37,7 +42,7 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myL
     }
     setLoading(true);
     try {
-      const target = mine ? targetLang : myLang;
+      const target = readLang;
       const { translation: tr } = await translateMessage({
         text: msg.original_text,
         sourceLang: msg.source_language,
@@ -132,7 +137,7 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myL
                   <Sparkle size={11} /> translation
                 </span>
                 <button
-                  onClick={() => speakText(shown, mine ? targetLang : myLang)}
+                  onClick={() => speakText(shown, readLang)}
                   className={cx(
                     "flex h-6 w-6 items-center justify-center rounded-full transition-colors duration-200",
                     mine ? "text-white/60 hover:bg-white/10 hover:text-white/90" : "text-faint hover:bg-surface-2 hover:text-ink"

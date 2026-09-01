@@ -42,6 +42,16 @@ const SEED = {
 
 const messagesByContact = JSON.parse(JSON.stringify(SEED));
 const listeners = new Map();
+const anyListeners = new Set();
+
+export function onAnyMessage(fn) {
+  anyListeners.add(fn);
+  return () => anyListeners.delete(fn);
+}
+
+function emitAny(event) {
+  anyListeners.forEach((fn) => fn(event));
+}
 
 let ME = ME_DEMO;
 let contacts = JSON.parse(JSON.stringify(CONTACTS_DEMO));
@@ -146,6 +156,7 @@ export async function createMessage({ contactId, text, mediaUrl = null, sourceLa
     const full = { message_id: nextId(), created_at: new Date().toISOString(), ...msg };
     messagesByContact[contactId] = [...(messagesByContact[contactId] || []), full];
     emit(contactId);
+    emitAny({ kind: "message", msg: full });
     return full;
   }
   const { data, error } = await supabase.from("messages").insert(msg).select().single();
@@ -178,6 +189,7 @@ export function simulateReply(contactId, myLang = "en") {
   };
   messagesByContact[contactId] = [...(messagesByContact[contactId] || []), msg];
   emit(contactId);
+  emitAny({ kind: "message", msg });
 }
 
 function emit(contactId) {
@@ -218,6 +230,7 @@ export function subscribe(contactId, fn) {
         const otherId = msg.sender_id === ME.user_id ? msg.receiver_id : msg.sender_id;
         const set = listeners.get(otherId);
         if (set) set.forEach((cb) => cb(msg));
+        emitAny({ kind: "message", msg });
       }).subscribe();
   }
   return () => listeners.get(contactId)?.delete(fn);

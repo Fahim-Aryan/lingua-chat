@@ -6,7 +6,7 @@ import MediaSheet from "./components/MediaSheet";
 import Login from "./components/Login";
 import Settings from "./components/Settings";
 import AddFriend from "./components/AddFriend";
-import { boot, getContacts, createMessage, isDemo } from "./lib/store";
+import { boot, getContacts, createMessage, isDemo, onAnyMessage, getMe } from "./lib/store";
 import { supabase, isConfigured } from "./lib/supabase";
 import { cx } from "./lib/utils";
 
@@ -49,6 +49,39 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [settings, setSettings] = useState(loadSettings);
+  const [unread, setUnread] = useState({});
+  const [vvh, setVvh] = useState(() =>
+    typeof window !== "undefined" && window.visualViewport ? window.visualViewport.height : window.innerHeight
+  );
+
+  // Track keyboard / toolbar resizing so the composer stays above the keyboard.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const handler = () => setVvh(vv.height);
+    vv.addEventListener("resize", handler);
+    vv.addEventListener("scroll", handler);
+    return () => {
+      vv.removeEventListener("resize", handler);
+      vv.removeEventListener("scroll", handler);
+    };
+  }, []);
+
+  // Mark unread badges + refresh sidebar previews whenever a message lands anywhere.
+  useEffect(() => {
+    const off = onAnyMessage((e) => {
+      if (!e?.msg) return;
+      const meId = getMe().user_id;
+      const otherId = e.msg.sender_id === meId ? e.msg.receiver_id : e.msg.sender_id;
+      setTick((t) => t + 1);
+      if (e.msg.sender_id !== meId && otherId !== activeId) {
+        setUnread((u) => ({ ...u, [otherId]: (u[otherId] || 0) + 1 }));
+      } else if (otherId === activeId) {
+        setUnread((u) => ({ ...u, [otherId]: 0 }));
+      }
+    });
+    return off;
+  }, [activeId]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -125,12 +158,13 @@ export default function App() {
   }
 
   return (
-    <div className={cx("grid h-full w-full grid-cols-1 md:grid-cols-[minmax(300px,360px)_1fr]", settings.theme === "dark" ? "bg-bg-dark" : "bg-bg")}>
+    <div style={{ height: vvh }} className={cx("grid w-full grid-cols-1 md:grid-cols-[minmax(300px,360px)_1fr]", settings.theme === "dark" ? "bg-bg-dark" : "bg-bg")}>
       <div className={cx("min-h-0 border-r border-line md:block", activeContact ? "hidden" : "block")}>
         <Sidebar
           contacts={contacts}
           activeId={activeId}
-          onSelect={(id) => { setActiveId(id); setTick((t) => t + 1); }}
+          unread={unread}
+          onSelect={(id) => { setActiveId(id); setUnread((u) => ({ ...u, [id]: 0 })); setTick((t) => t + 1); }}
           tick={tick}
           onSettings={() => setSettingsOpen(true)}
           onAddFriend={() => setAddFriendOpen(true)}
