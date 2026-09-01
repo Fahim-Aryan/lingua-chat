@@ -6,13 +6,11 @@ import { speakText } from "../lib/tts";
 import { getMe } from "../lib/store";
 import { formatTime, cx, isJapanese } from "../lib/utils";
 
-export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, targetLang }) {
+export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, myLang, targetLang }) {
   const me = getMe();
   const mine = msg.sender_id === me.user_id;
 
-  const [translation, setTranslation] = useState(
-    autoTranslate ? msg.translated_text : null
-  );
+  const [translation, setTranslation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -29,10 +27,12 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, tar
   const hasTranslation = translation || msg.translated_text;
   const canTranslate = !hasTranslation && msg.original_text;
 
-  // Language this message is meant to be read in:
-  // my own outgoing messages -> the recipient's language (targetLang);
-  // incoming messages       -> the language the sender encoded (msg.target_language).
-  const readLang = mine ? targetLang : (msg.target_language || targetLang);
+  // Language the viewer wants to read a message in:
+  // my own outgoing messages -> the recipient's language (targetLang) so I can preview
+  //                             what the other person reads;
+  // incoming messages       -> my own language (myLang). e.g. pair "en → ja", receiving
+  //                             Japanese -> translate to English (what I speak).
+  const readLang = mine ? targetLang : myLang;
 
   async function handleTranslate() {
     if (translation || loading) return;
@@ -53,6 +53,12 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, tar
       setLoading(false);
     }
   }
+
+  // Auto-translate incoming messages live via the API when the toggle is on.
+  useEffect(() => {
+    if (autoTranslate && canTranslate && !mine) handleTranslate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoTranslate]);
 
   const shown = translation || msg.translated_text;
 
@@ -110,13 +116,26 @@ export default function MessageBubble({ msg, autoTranslate, isNew, onDelete, tar
           )}
 
           {msg.original_text && (
-            <p className={cx(
-              "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
-              isJapanese(msg.original_text) && "font-jp",
-              msg.source_language === "bn" && "font-bn"
-            )}>
-              {msg.original_text}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className={cx(
+                "whitespace-pre-wrap break-words text-[15px] leading-relaxed",
+                isJapanese(msg.original_text) && "font-jp",
+                msg.source_language === "bn" && "font-bn"
+              )}>
+                {msg.original_text}
+              </p>
+              <button
+                onClick={() => speakText(msg.original_text, msg.source_language)}
+                className={cx(
+                  "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full transition-colors duration-200",
+                  mine ? "text-white/60 hover:bg-white/10 hover:text-white/90" : "text-faint hover:bg-surface-2 hover:text-ink"
+                )}
+                aria-label="Pronounce original"
+                title="Pronounce"
+              >
+                <Volume size={13} />
+              </button>
+            </div>
           )}
 
           {shown && (

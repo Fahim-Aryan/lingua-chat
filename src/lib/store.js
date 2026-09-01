@@ -1,5 +1,4 @@
 import { supabase, isConfigured } from "./supabase";
-import { translateMessage } from "./translation";
 
 export const isDemo = !isConfigured;
 
@@ -23,20 +22,20 @@ const t = (minsAgo) => new Date(Date.now() - minsAgo * 60000).toISOString();
 
 const SEED = {
   u_yuki: [
-    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "こんばんは！", source_language: "ja", target_language: "en", translated_text: "Good evening!", media_url: null, created_at: t(58) },
-    { message_id: nextId(), sender_id: "u_me", receiver_id: "u_yuki", original_text: "Good evening, how are you?", source_language: "en", target_language: "ja", translated_text: "こんばんは、お元気ですか？", media_url: null, created_at: t(56) },
-    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "げんきです！たのしみ", source_language: "ja", target_language: "en", translated_text: "I'm great! Looking forward to it.", media_url: null, created_at: t(55) },
+    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "こんばんは！", source_language: "ja", target_language: "en", translated_text: null, media_url: null, created_at: t(58) },
+    { message_id: nextId(), sender_id: "u_me", receiver_id: "u_yuki", original_text: "Good evening, how are you?", source_language: "en", target_language: "ja", translated_text: null, media_url: null, created_at: t(56) },
+    { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "げんきです！たのしみ", source_language: "ja", target_language: "en", translated_text: null, media_url: null, created_at: t(55) },
     { message_id: nextId(), sender_id: "u_yuki", receiver_id: "u_me", original_text: "", source_language: "ja", target_language: "en", translated_text: null, media_url: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?q=80&w=900&auto=format&fit=crop", created_at: t(40) },
-    { message_id: nextId(), sender_id: "u_me", receiver_id: "u_yuki", original_text: "See you tomorrow", source_language: "en", target_language: "ja", translated_text: "またあした", media_url: null, created_at: t(38) },
+    { message_id: nextId(), sender_id: "u_me", receiver_id: "u_yuki", original_text: "See you tomorrow", source_language: "en", target_language: "ja", translated_text: null, media_url: null, created_at: t(38) },
   ],
   u_haru: [
-    { message_id: nextId(), sender_id: "u_haru", receiver_id: "u_me", original_text: "おなかすいた", source_language: "ja", target_language: "en", translated_text: "I'm hungry.", media_url: null, created_at: t(120) },
+    { message_id: nextId(), sender_id: "u_haru", receiver_id: "u_me", original_text: "おなかすいた", source_language: "ja", target_language: "en", translated_text: null, media_url: null, created_at: t(120) },
   ],
   u_sensei: [
-    { message_id: nextId(), sender_id: "u_sensei", receiver_id: "u_me", original_text: "おはようございます", source_language: "ja", target_language: "en", translated_text: "Good morning! (polite)", media_url: null, created_at: t(300) },
+    { message_id: nextId(), sender_id: "u_sensei", receiver_id: "u_me", original_text: "おはようございます", source_language: "ja", target_language: "en", translated_text: null, media_url: null, created_at: t(300) },
   ],
   u_rin: [
-    { message_id: nextId(), sender_id: "u_rin", receiver_id: "u_me", original_text: "ありがとう", source_language: "ja", target_language: "en", translated_text: "Thank you!", media_url: null, created_at: t(1440) },
+    { message_id: nextId(), sender_id: "u_rin", receiver_id: "u_me", original_text: "ありがとう", source_language: "ja", target_language: "en", translated_text: null, media_url: null, created_at: t(1440) },
   ],
 };
 
@@ -134,20 +133,12 @@ export async function lastMessage(contactId) {
 }
 
 export async function createMessage({ contactId, text, mediaUrl = null, sourceLang, targetLang }) {
-  let translatedText = null;
-  if (text.trim()) {
-    try {
-      const { translation } = await translateMessage({ text, sourceLang, targetLang });
-      translatedText = translation;
-    } catch (e) {
-      console.warn("[createMessage] translate failed", e);
-    }
-  }
+  // No auto-translation on send — the recipient translates on demand via the Translate button.
   const msg = {
     sender_id: ME.user_id,
     receiver_id: contactId,
     original_text: text,
-    translated_text: translatedText,
+    translated_text: null,
     source_language: sourceLang,
     target_language: targetLang,
     media_url: mediaUrl,
@@ -183,7 +174,7 @@ export function simulateReply(contactId, myLang = "en") {
     original_text: pick.ja,
     source_language: "ja",
     target_language: myLang,
-    translated_text: pick[myLang] || pick.en,
+    translated_text: null,
     media_url: null,
     created_at: new Date().toISOString(),
   };

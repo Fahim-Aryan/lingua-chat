@@ -204,6 +204,7 @@ export default function ChatView({ contact, onBack, onAttach, settings }) {
                   autoTranslate={autoTranslate}
                   isNew={newMsgIds.has(m.message_id)}
                   onDelete={() => handleDelete(m.message_id)}
+                  myLang={myLang}
                   targetLang={targetLang}
                 />
               ))}
