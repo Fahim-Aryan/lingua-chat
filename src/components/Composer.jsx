@@ -119,6 +119,14 @@ export default function Composer({ inputLang, setInputLang, onSend, onAttach, ta
     textareaRef.current?.focus();
   }
 
+  function applyTranslation(translated) {
+    // The text is now in the target language — swap the input language so the
+    // message is stored with the real source_language.
+    setInputLang(targetLang);
+    updateText(translated);
+    textareaRef.current?.focus();
+  }
+
   function toggleInputLang() {
     const langs = ["ja", "bn", "en"];
     const idx = langs.indexOf(inputLang);
@@ -138,7 +146,7 @@ export default function Composer({ inputLang, setInputLang, onSend, onAttach, ta
             sourceLang={inputLang}
             targetLang={targetLang}
             onApplyCorrection={applyCorrection}
-            onApplyTranslation={applyCorrection}
+            onApplyTranslation={applyTranslation}
             onDismiss={() => setPreview({ status: "idle", data: null })}
           />
         </div>

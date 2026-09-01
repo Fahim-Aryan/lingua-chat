@@ -39,3 +39,15 @@ export function cx(...parts) {
 export function isJapanese(str) {
   return /[\u3040-\u30ff\u3400-\u9fff]/.test(str);
 }
+
+/**
+ * Guess the actual language of a piece of text.
+ * Stored `source_language` can be wrong (e.g. a live-preview translation was
+ * applied into the composer), so never trust it blindly for translation/tts.
+ */
+export function detectLang(str) {
+  if (!str) return "en";
+  if (/[\u3040-\u30ff\u3400-\u9fff]/.test(str)) return "ja";
+  if (/[\u0980-\u09ff]/.test(str)) return "bn";
+  return "en";
+}
