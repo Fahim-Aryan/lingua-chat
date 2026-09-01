@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import ChatView from "./components/ChatView";
 import EmptyState from "./components/EmptyState";
@@ -8,6 +8,7 @@ import Settings from "./components/Settings";
 import AddFriend from "./components/AddFriend";
 import { boot, getContacts, createMessage, isDemo, onAnyMessage, getMe } from "./lib/store";
 import { supabase, isConfigured } from "./lib/supabase";
+import { playPop, notifyMessage, askNotificationPermission } from "./lib/notify";
 import { cx } from "./lib/utils";
 
 const SETTINGS_VERSION = 4;
@@ -50,38 +51,70 @@ export default function App() {
   const [addFriendOpen, setAddFriendOpen] = useState(false);
   const [settings, setSettings] = useState(loadSettings);
   const [unread, setUnread] = useState({});
+  const contactsRef = useRef([]);
+  contactsRef.current = contacts;
   const [vvh, setVvh] = useState(() =>
     typeof window !== "undefined" && window.visualViewport ? window.visualViewport.height : window.innerHeight
   );
 
   // Track keyboard / toolbar resizing so the composer stays above the keyboard.
+  // Also pin the window scroll to 0 — iOS Safari pans the page up when the
+  // keyboard opens, which would push the app (fixed height) out of view.
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
-    const handler = () => setVvh(vv.height);
-    vv.addEventListener("resize", handler);
-    vv.addEventListener("scroll", handler);
+    const sync = () => {
+      if (vv) setVvh(vv.height);
+      window.scrollTo(0, 0);
+    };
+    sync();
+    if (vv) {
+      vv.addEventListener("resize", sync);
+      vv.addEventListener("scroll", sync);
+    }
+    window.addEventListener("scroll", sync);
     return () => {
-      vv.removeEventListener("resize", handler);
-      vv.removeEventListener("scroll", handler);
+      if (vv) {
+        vv.removeEventListener("resize", sync);
+        vv.removeEventListener("scroll", sync);
+      }
+      window.removeEventListener("scroll", sync);
     };
   }, []);
 
   // Mark unread badges + refresh sidebar previews whenever a message lands anywhere.
+  // Also play a sound and fire a browser notification for incoming messages.
   useEffect(() => {
     const off = onAnyMessage((e) => {
       if (!e?.msg) return;
       const meId = getMe().user_id;
       const otherId = e.msg.sender_id === meId ? e.msg.receiver_id : e.msg.sender_id;
       setTick((t) => t + 1);
-      if (e.msg.sender_id !== meId && otherId !== activeId) {
+      if (e.msg.sender_id === meId) return; // my own message — just refresh, no alert
+
+      playPop();
+      const fromContact = contactsRef.current.find((c) => c.user_id === otherId);
+      const fromName = fromContact?.username || "New message";
+      const preview = e.msg.original_text || (e.msg.media_url ? "📷 Photo" : "");
+      if (document.hidden || otherId !== activeId) {
+        notifyMessage(fromName, preview, () => setActiveId(otherId));
+      }
+
+      if (otherId !== activeId) {
         setUnread((u) => ({ ...u, [otherId]: (u[otherId] || 0) + 1 }));
-      } else if (otherId === activeId) {
+      } else {
         setUnread((u) => ({ ...u, [otherId]: 0 }));
       }
     });
     return off;
   }, [activeId]);
+
+  // Ask for notification permission once, on the first user interaction
+  // (browser requires a gesture). Audio autoplay policy also needs a gesture.
+  useEffect(() => {
+    const ask = () => askNotificationPermission();
+    window.addEventListener("pointerdown", ask, { once: true });
+    return () => window.removeEventListener("pointerdown", ask);
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
